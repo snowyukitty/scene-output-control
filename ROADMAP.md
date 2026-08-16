@@ -4,7 +4,7 @@ This roadmap is based on the current event flow, OBS 31.1.1 source behavior, and
 recent OBS runtime logs. It separates release-blocking verification from larger
 maintenance work so reliability improvements can land incrementally.
 
-## Active Handoff: verify the `Mute to me` capture-safe fix (P0, updated 2026-08-16)
+## Post-release Verification: `Mute to me` capture safety (P0, updated 2026-08-16)
 
 ### Reported behavior
 
@@ -113,9 +113,10 @@ otherwise-unsafe approach resumable and reversible.
   user-confirmed post-fix listening behavior; Windows RelWithDebInfo builds; and
   the current unit test suite. Builds and 1/1 tests passed. Both pre-fix mute
   intervals produced digital silence and confirmed the defect.
-- Unresolved risk: the formal post-fix saved-waveform matrix and the newest dock
-  layout behavior still need a controlled live run after the current OBS
-  process is closed and the final build is installed.
+- Unresolved risk: the formal post-fix saved-waveform matrix and an end-to-end
+  attached-dock interaction check remain manual follow-up work. The final
+  `1.1.1` DLL is installed, loads successfully, and passed the automated build,
+  test, formatting, and packaging checks.
 - Lease state: no workspace lease was claimed.
 
 ## Architecture Baseline
@@ -134,7 +135,7 @@ The key invariant is that a scene switch must be idempotent: applying the same
 preset twice must not reset the video pipeline, rewrite configuration files, or
 restart an output twice.
 
-## P0: Release Verification
+## P0: Extended Runtime Verification
 
 - Exercise the plugin with disposable OBS profiles on both the pinned OBS
   31.1.1 SDK version and the current supported OBS 32 runtime.

@@ -86,7 +86,7 @@ For a browser or game that still plays directly to the listening device, route t
 
 ## Installation
 
-Download the latest release from [GitHub Releases](https://github.com/snowyukitty/scene-output-control/releases).
+Download the current installers from the [latest GitHub Release](https://github.com/snowyukitty/scene-output-control/releases/latest).
 
 Windows plugin layout:
 

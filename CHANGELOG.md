@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+## 1.1.1 - 2026-08-16
+
 ### Added
 
 - Added validation tests for preset normalization, rational FPS matching, and FLV audio-track selection.

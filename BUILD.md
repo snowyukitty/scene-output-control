@@ -25,11 +25,12 @@ gh run download <run-id> -D artifacts\<run-id>
 Release artifacts are produced by pushing a semantic version tag:
 
 ```powershell
-git tag 1.1.0
-git push origin 1.1.0
+$releaseVersion = "1.1.1"
+git tag -a $releaseVersion -m "Scene Output Control $releaseVersion"
+git push origin $releaseVersion
 ```
 
-The tag workflow builds Windows, macOS, Ubuntu, and source artifacts, creates a draft GitHub Release, and uploads checksums. Review the generated artifacts before publishing the release.
+The tag workflow builds Windows, macOS, Ubuntu, and source artifacts, creates a draft GitHub Release, and uploads SHA-256 checksums. Confirm that the tag matches `buildspec.json`, review every generated artifact, and then publish the draft release.
 
 ## Local Windows Build
 
