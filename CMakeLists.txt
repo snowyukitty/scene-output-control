@@ -59,10 +59,9 @@ target_compile_definitions(
     PRIVATE PLUGIN_VERSION="${_version}"
 )
 
-set_target_properties_plugin(
-    ${CMAKE_PROJECT_NAME}
-    PROPERTIES OUTPUT_NAME ${_name}
-)
+# gersemi: off
+set_target_properties_plugin(${CMAKE_PROJECT_NAME} PROPERTIES OUTPUT_NAME ${_name})
+# gersemi: on
 
 include(CTest)
 if(BUILD_TESTING)
