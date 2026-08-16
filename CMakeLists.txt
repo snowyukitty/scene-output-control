@@ -59,7 +59,10 @@ target_compile_definitions(
     PRIVATE PLUGIN_VERSION="${_version}"
 )
 
-set_target_properties_plugin(${CMAKE_PROJECT_NAME} PROPERTIES OUTPUT_NAME ${_name})
+set_target_properties_plugin(
+    ${CMAKE_PROJECT_NAME}
+    PROPERTIES OUTPUT_NAME ${_name}
+)
 
 include(CTest)
 if(BUILD_TESTING)
