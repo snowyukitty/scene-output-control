@@ -44,9 +44,12 @@ Then run:
 ```powershell
 cmake --preset windows-x64
 cmake --build --preset windows-x64 --config RelWithDebInfo
+ctest --test-dir build_x64 -C RelWithDebInfo --output-on-failure
 ```
 
 The first configure/build downloads the pinned OBS/Qt dependencies and may take a few minutes.
+
+The checked-in Windows preset targets Visual Studio 2022. With a newer Visual Studio generator, use a separate build directory and select that installed generator explicitly; do not reuse `build_x64` across generators.
 
 ## Local macOS / Linux Build
 
@@ -55,11 +58,13 @@ Use the platform presets provided by the template. The exact package requirement
 ```bash
 cmake --preset macos
 cmake --build --preset macos --config RelWithDebInfo
+ctest --test-dir build_macos -C RelWithDebInfo --output-on-failure
 ```
 
 ```bash
-cmake --preset ubuntu-24.04
-cmake --build --preset ubuntu-24.04 --config RelWithDebInfo
+cmake --preset ubuntu-x86_64
+cmake --build --preset ubuntu-x86_64 --config RelWithDebInfo
+ctest --test-dir build_x86_64 --output-on-failure
 ```
 
 ## Manual OBS/Qt Build
@@ -82,4 +87,8 @@ Windows layout:
 %ProgramData%\obs-studio\plugins\obs-auto-resize-output\data\locale\en-US.ini
 ```
 
-After installing, start OBS and enable **Docks -> Auto Resize Output**.
+After installing, start OBS and enable **Docks -> Scene Output Control**.
+
+The installation directory and DLL filename intentionally keep the original
+`obs-auto-resize-output` identifier so an upgrade replaces the existing plugin
+instead of leaving two modules for OBS to load.

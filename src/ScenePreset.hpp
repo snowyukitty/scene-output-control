@@ -17,6 +17,7 @@ typedef struct obs_source obs_source_t;
 
 // The nested object key under a scene source's private_settings.
 inline constexpr const char *kPresetKey = "auto_resize_output";
+inline constexpr uint32_t kPresetSchemaVersion = 1;
 
 struct ScenePreset {
 	// Master switch: when false this scene applies no overrides at all.
@@ -56,9 +57,8 @@ struct ScenePreset {
 	// Switches OBS's global audio monitoring device when this scene becomes
 	// active. Monitoring is the playback path only -- it never touches the
 	// encoders, so this applies instantly even mid-recording and does not change
-	// what (or how loud) anything is recorded. Lets a scene route monitored
-	// audio to a device you are not listening to (so you stop hearing it) while
-	// recording keeps capturing it at full volume.
+	// the existing recording mix. Lets a scene route monitored audio to a
+	// device you are not listening to without changing source/track routing.
 	bool use_monitor_device = false;
 	std::string monitor_device_name; // human-readable name (for obs_set + display)
 	std::string monitor_device_id;   // device id (for obs_set + matching)

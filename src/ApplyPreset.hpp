@@ -41,23 +41,41 @@ void aro_apply_preset_for_scene(obs_source_t *scene);
 // stop -> apply -> start restart sequence.
 void aro_on_recording_stopped();
 
-// "Mute to me": a global, instant toggle that silences what YOU hear without
-// touching the recording. On Windows this mutes OBS' playback sessions on the
-// current monitoring endpoint (the same OS audio-session layer EarTrumpet
-// controls). On other platforms it falls back to routing OBS's global
-// monitoring device to a silent sentinel. Independent of any scene/preset and
-// safe to toggle mid-recording -- the output/encoder path is untouched, so
-// recorded content and volume are unchanged. We do not toggle per-source
-// monitoring type: monitoring_type is persisted into the scene collection on
-// every save, so muting via type could permanently lose the user's setup.
+// Called from RECORDING_STARTING to acknowledge that OBS accepted the restart
+// request after validating its path, disk space, and output availability.
+void aro_on_recording_starting();
+
+// Called from RECORDING_STARTED to finish the restart state machine and
+// restore a prior paused state.
+void aro_on_recording_started();
+
+// "Mute to me": a global, instant toggle that silences OBS-monitored audio
+// without touching the recording mix. For Monitor and Output sources it
+// temporarily disables only monitoring; Monitor Only sources are temporarily
+// muted because they are already excluded from output. Exact recovery state is
+// stored in source private settings before any change, persisted immediately,
+// and restored on unmute, unload, or the next startup after interruption.
 void aro_set_mute_to_me(bool mute);
 bool aro_mute_to_me_active();
+bool aro_mute_to_me_available();
+bool aro_mute_to_me_blocked_by_other_instance();
+bool aro_mute_to_me_waiting_for_source();
+bool aro_mute_to_me_degraded();
 
-// Defensive: if a prior non-Windows run was killed while muted, the silent
-// sentinel device may still be set. Call once on load to reset it to Default.
-// No-op otherwise.
+// Re-assert an active source-monitoring mute, catch newly monitored sources,
+// and retry interrupted recovery. Call periodically from the UI thread.
+// Returns true when the user-visible armed/active state changed.
+bool aro_maintain_mute_to_me();
+
+// Defensive startup recovery. Restores persisted per-source monitoring state,
+// legacy Windows audio-session snapshots, or an old silent-device sentinel.
 void aro_recover_monitoring_on_load();
 
-// Release any pending state (call on module unload / exit). Also un-mutes "mute
-// to me" so OBS playback/session state is not left muted by the plugin.
+// Keep source-level mute recovery exact across scene-collection switches.
+// Call before the old collection is saved/unloaded and after the new one loads.
+void aro_on_scene_collection_changing();
+void aro_on_scene_collection_changed();
+
+// Release any pending state (call on module unload / exit). Also restores any
+// source state changed by "mute to me".
 void aro_shutdown();

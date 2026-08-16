@@ -48,6 +48,8 @@ target_sources(
     PRIVATE
         src/plugin-main.cpp
         src/ScenePreset.cpp
+        src/PresetValidation.cpp
+        src/AudioSessionState.cpp
         src/ApplyPreset.cpp
         src/PresetDock.cpp
 )
@@ -58,3 +60,21 @@ target_compile_definitions(
 )
 
 set_target_properties_plugin(${CMAKE_PROJECT_NAME} PROPERTIES OUTPUT_NAME ${_name})
+
+include(CTest)
+if(BUILD_TESTING)
+    add_executable(
+        ${CMAKE_PROJECT_NAME}-preset-tests
+        tests/PresetValidationTests.cpp
+        src/PresetValidation.cpp
+        src/AudioSessionState.cpp
+    )
+    target_include_directories(
+        ${CMAKE_PROJECT_NAME}-preset-tests
+        PRIVATE "${CMAKE_CURRENT_SOURCE_DIR}/src"
+    )
+    # The macOS helper builds the plugin target explicitly, so make the test
+    # executable a dependency rather than relying on the generator's ALL target.
+    add_dependencies(${CMAKE_PROJECT_NAME} ${CMAKE_PROJECT_NAME}-preset-tests)
+    add_test(NAME preset-validation COMMAND ${CMAKE_PROJECT_NAME}-preset-tests)
+endif()

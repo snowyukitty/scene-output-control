@@ -37,9 +37,9 @@
     }
   },
   "name": "obs-auto-resize-output",
-  "displayName": "Auto Resize Output",
-  "version": "1.1.0",
+  "displayName": "Scene Output Control",
+  "version": "1.1.1",
   "author": "snowyukitty",
-  "website": "https://snowyukitty.github.io/obs-auto-resize-output/",
+  "website": "https://snowyukitty.github.io/scene-output-control/",
   "email": "snowyukitty@gmail.com"
 }

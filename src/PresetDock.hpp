@@ -16,6 +16,7 @@ class QGroupBox;
 class QLabel;
 class QLineEdit;
 class QPushButton;
+class QScrollArea;
 class QSpinBox;
 
 struct obs_source;
@@ -31,6 +32,8 @@ public:
 	// Called from the frontend event callback (UI thread).
 	void refreshSceneList();
 	void onProgramSceneChanged();
+	void onProfileChanged();
+	void refreshMuteState();
 	void showStatus(const QString &message);
 
 private slots:
@@ -69,7 +72,9 @@ private:
 	bool m_compactDockModeActive = false;
 
 	QPushButton *m_muteToMe = nullptr;
+	QPushButton *m_showFullSettings = nullptr;
 	QWidget *m_fullControls = nullptr;
+	QScrollArea *m_fullControlsScroll = nullptr;
 	QPushButton *m_compactDockMode = nullptr;
 	QComboBox *m_sceneCombo = nullptr;
 	QLabel *m_modeLabel = nullptr;

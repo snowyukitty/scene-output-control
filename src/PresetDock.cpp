@@ -2,6 +2,7 @@
 
 #include "PresetDock.hpp"
 #include "ScenePreset.hpp"
+#include "PresetValidation.hpp"
 #include "ApplyPreset.hpp"
 
 #include <obs.h>
@@ -11,6 +12,8 @@
 #include <QAction>
 #include <QCheckBox>
 #include <QComboBox>
+#include <QDesktopServices>
+#include <QDockWidget>
 #include <QFileDialog>
 #include <QFrame>
 #include <QGridLayout>
@@ -20,8 +23,11 @@
 #include <QLineEdit>
 #include <QMenu>
 #include <QPushButton>
+#include <QScrollArea>
 #include <QSignalBlocker>
+#include <QSizePolicy>
 #include <QSpinBox>
+#include <QUrl>
 #include <QVBoxLayout>
 
 #include <cstring>
@@ -33,6 +39,7 @@ namespace {
 constexpr const char *kUiConfigSection = "AutoResizeOutput";
 constexpr const char *kCompactDockModeKey = "CompactDockMode";
 constexpr const char *kOldCompactOverlayVisibleKey = "CompactMuteOverlayVisible";
+constexpr const char *kAudioSetupGuideUrl = "https://snowyukitty.github.io/scene-output-control/#quick-audio";
 
 // (RecFormat2 identifier, human label). Identifiers must match what OBS writes
 // for the recording container; labels are what the user sees.
@@ -48,14 +55,15 @@ const FormatEntry kFormats[] = {
 	{"fragmented_mp4", "Fragmented MP4 (.mp4)"},
 	{"fragmented_mov", "Fragmented MOV (.mov)"},
 	{"mpegts", "MPEG-TS (.ts)"},
+	{"hls", "HLS (.m3u8, Advanced only)"},
 	{"flv", "FLV (.flv)"},
 };
 
-QSpinBox *makeResSpin(int defaultValue)
+QSpinBox *makeResSpin(int defaultValue, int minimum = kMinVideoDimension, int step = 2)
 {
 	auto *s = new QSpinBox();
-	s->setRange(1, 16384);
-	s->setSingleStep(2);
+	s->setRange(minimum, static_cast<int>(kMaxVideoDimension));
+	s->setSingleStep(step);
 	s->setValue(defaultValue);
 	return s;
 }
@@ -88,6 +96,7 @@ void PresetDock::buildUi()
 	auto *root = new QVBoxLayout(this);
 	root->setContentsMargins(8, 8, 8, 8);
 	root->setSpacing(8);
+	root->setSizeConstraint(QLayout::SetNoConstraint);
 
 	// Apply one rich-text tooltip to several widgets (Qt auto-wraps rich text).
 	auto setTip = [](const QString &t, std::initializer_list<QWidget *> ws) {
@@ -100,31 +109,58 @@ void PresetDock::buildUi()
 	m_muteToMe = new QPushButton();
 	m_muteToMe->setCheckable(true);
 	m_muteToMe->setToolTip(tr("<b>Mute to me</b><br>One click stops <i>you</i> from hearing monitored "
-				  "audio — the recording keeps capturing everything at full volume. Works "
-				  "instantly, even while recording, and applies to all scenes.<br><br>It "
-				  "mutes OBS's playback session on Windows (and uses a monitoring-device "
-				  "fallback on other platforms); your recording's audio path is never "
-				  "touched.<br><br>Tip: only affects audio you hear <i>through OBS "
-				  "monitoring</i> (sources set to \"Monitor and Output\"). Audio your system "
-				  "plays directly can't be muted this way without also muting the capture."));
-	m_muteToMe->setEnabled(obs_audio_monitoring_available());
+				  "audio without changing OBS's recording mix. Works instantly, even while "
+				  "recording, and applies to all scenes.<br><br>It suppresses only each "
+				  "source's OBS monitoring branch and safely restores the original state; "
+				  "your recording track assignment and source volume are never touched."
+				  "<br><br>For audio that must also be recorded, use <i>Monitor and "
+				  "Output</i> and assign the source to a recorded track. <i>Monitor Only</i> "
+				  "is playback-only in OBS. Audio your system plays directly cannot be muted "
+				  "by this control."));
+	m_muteToMe->setEnabled(aro_mute_to_me_available());
 	m_muteToMe->setChecked(aro_mute_to_me_active());
 	m_muteToMe->setText(m_muteToMe->isChecked() ? tr("Muted to you — click to hear again")
 						    : tr("Mute to me (stop hearing; keep recording)"));
 	m_muteToMe->setContextMenuPolicy(Qt::CustomContextMenu);
 	root->addWidget(m_muteToMe);
 
+	m_showFullSettings = new QPushButton(tr("Show resize / output settings"));
+	m_showFullSettings->setToolTip(tr("Leave compact mode and show per-scene resolution, FPS, "
+					  "recording, and monitoring settings."));
+	m_showFullSettings->setVisible(false);
+	root->addWidget(m_showFullSettings);
+
 	m_fullControls = new QWidget(this);
 	auto *fullRoot = new QVBoxLayout(m_fullControls);
 	fullRoot->setContentsMargins(0, 0, 0, 0);
 	fullRoot->setSpacing(8);
-	root->addWidget(m_fullControls);
+
+	// Keep the full editor's size hint from forcing QMainWindow to redistribute
+	// every attached OBS dock when compact mode is expanded. The editor scrolls
+	// inside whatever space the user already assigned to this dock.
+	m_fullControlsScroll = new QScrollArea(this);
+	m_fullControlsScroll->setWidgetResizable(true);
+	m_fullControlsScroll->setFrameShape(QFrame::NoFrame);
+	m_fullControlsScroll->setSizeAdjustPolicy(QAbstractScrollArea::AdjustIgnored);
+	m_fullControlsScroll->setSizePolicy(QSizePolicy::Ignored, QSizePolicy::Ignored);
+	m_fullControlsScroll->setMinimumSize(0, 0);
+	m_fullControlsScroll->setWidget(m_fullControls);
+	root->addWidget(m_fullControlsScroll, 1);
 
 	m_compactDockMode = new QPushButton(tr("Compact dock mode"));
 	m_compactDockMode->setToolTip(tr("<b>Compact dock mode</b><br>Keep this OBS dock in the interface, "
 					 "but hide all settings below the Mute to me button. "
 					 "Right-click the mute button to show full settings again."));
-	fullRoot->addWidget(m_compactDockMode);
+	auto *audioSetupGuide = new QPushButton(tr("Audio setup guide..."));
+	audioSetupGuide->setToolTip(tr("Open the step-by-step guide for hearing captured audio through OBS, "
+				       "muting it locally, and keeping it in the recording."));
+	auto *dockActions = new QHBoxLayout();
+	dockActions->addWidget(audioSetupGuide);
+	dockActions->addStretch(1);
+	dockActions->addWidget(m_compactDockMode);
+	fullRoot->addLayout(dockActions);
+	connect(audioSetupGuide, &QPushButton::clicked, this,
+		[]() { QDesktopServices::openUrl(QUrl(QString::fromUtf8(kAudioSetupGuideUrl))); });
 
 	{
 		auto *line = new QFrame();
@@ -175,7 +211,7 @@ void PresetDock::buildUi()
 		++r;
 
 		m_useOutputRes = new QCheckBox(tr("Output (scaled) resolution"));
-		m_outputCx = makeResSpin(1920);
+		m_outputCx = makeResSpin(1920, kMinOutputWidth, 4);
 		m_outputCy = makeResSpin(1080);
 		setTip(tr("<b>Output (scaled) resolution = clarity / frame size</b><br>The "
 			  "pixel size actually recorded; the canvas is scaled to this. E.g. "
@@ -308,11 +344,10 @@ void PresetDock::buildUi()
 			  "playback device OBS sends <i>monitored</i> audio to. This is the "
 			  "listening path only — it is completely separate from recording, so "
 			  "it changes <b>instantly even while recording</b> and never alters "
-			  "what is recorded or how loud it is.<br><br>Use it to stop hearing a "
-			  "scene's audio (point monitoring at a device you are not listening "
-			  "to) while the recording keeps capturing it at full volume.<br><br>"
-			  "Note: only affects sources whose Audio Monitoring is set to "
-			  "\"Monitor and Output\" (or \"Monitor Only\") in OBS's audio mixer."),
+			  "the recording mix.<br><br>Use it to route what you hear to a different "
+			  "device. To hear and record a source, set Audio Monitoring to "
+			  "\"Monitor and Output\" and assign it to a recorded track. OBS intentionally "
+			  "excludes \"Monitor Only\" sources from recording and streaming."),
 		       {m_useMonitorDevice, m_monitorDevice});
 		g->addWidget(m_useMonitorDevice, r, 0);
 		g->addWidget(m_monitorDevice, r, 1, 1, 3);
@@ -386,6 +421,7 @@ void PresetDock::buildUi()
 	connect(m_applyNow, &QPushButton::clicked, this, &PresetDock::onApplyNow);
 	connect(m_muteToMe, &QPushButton::toggled, this, &PresetDock::onMuteToMeToggled);
 	connect(m_muteToMe, &QPushButton::customContextMenuRequested, this, &PresetDock::showMuteContextMenu);
+	connect(m_showFullSettings, &QPushButton::clicked, this, [this]() { setCompactDockMode(false, true); });
 	connect(m_compactDockMode, &QPushButton::clicked, this, &PresetDock::onCompactDockModeClicked);
 }
 
@@ -450,6 +486,13 @@ void PresetDock::onProgramSceneChanged()
 	}
 }
 
+void PresetDock::onProfileChanged()
+{
+	updateModeLabel();
+	loadCompactDockMode();
+	loadFromScene();
+}
+
 void PresetDock::onEditSceneChanged(int)
 {
 	// A user-initiated selection decides whether we keep following the program
@@ -507,6 +550,13 @@ void PresetDock::loadFromScene()
 	m_useRecFormat->setChecked(p.use_rec_format);
 	{
 		int fi = m_recFormat->findData(QString::fromStdString(p.rec_format));
+		if (fi < 0 && !p.rec_format.empty()) {
+			// Preserve formats introduced by newer OBS versions or older
+			// plugin builds instead of silently replacing them with MKV.
+			const QString id = QString::fromStdString(p.rec_format);
+			m_recFormat->addItem(tr("Saved format (%1)").arg(id), id);
+			fi = m_recFormat->count() - 1;
+		}
 		m_recFormat->setCurrentIndex(fi >= 0 ? fi : 0);
 	}
 
@@ -585,6 +635,16 @@ void PresetDock::saveToScene()
 
 	p.restart_recording = m_restartRecording->isChecked();
 
+	normalize_scene_preset(p);
+	{
+		// Keep the form honest about libobs' output-size alignment instead
+		// of showing values that OBS would silently round down.
+		const QSignalBlocker outputCxBlocker(m_outputCx);
+		const QSignalBlocker outputCyBlocker(m_outputCy);
+		m_outputCx->setValue(static_cast<int>(p.output_cx));
+		m_outputCy->setValue(static_cast<int>(p.output_cy));
+	}
+
 	preset_save(scene, p);
 	obs_source_release(scene);
 }
@@ -642,33 +702,58 @@ void PresetDock::setMuteToMeFromUi(bool checked)
 void PresetDock::syncMuteToMeUi()
 {
 	const bool active = aro_mute_to_me_active();
-	const bool available = obs_audio_monitoring_available();
+	const bool waiting = aro_mute_to_me_waiting_for_source();
+	const bool degraded = aro_mute_to_me_degraded();
+	const bool available = aro_mute_to_me_available();
+	const bool blockedByOtherInstance = aro_mute_to_me_blocked_by_other_instance();
+	const bool unavailableWhileActive = active && !available;
 	const QString text =
-		!available ? (m_compactDockModeActive ? tr("Mute unavailable") : tr("Mute to me unavailable"))
+		unavailableWhileActive
+			? (m_compactDockModeActive ? tr("Turn mute off")
+						   : tr("Monitoring unavailable — click to turn mute off"))
+		: !available ? (m_compactDockModeActive ? tr("Mute unavailable") : tr("Mute to me unavailable"))
+		: degraded ? (m_compactDockModeActive ? tr("Mute error") : tr("Mute error — monitoring may be audible"))
+		: waiting  ? (m_compactDockModeActive ? tr("Armed") : tr("Mute armed — waiting for monitored audio"))
 			   : (m_compactDockModeActive ? (active ? tr("Hear") : tr("Mute"))
 						      : (active ? tr("Muted to you — click to hear again")
 								: tr("Mute to me (stop hearing; keep recording)")));
 	const QString tooltip =
-		!available                ? (m_compactDockModeActive
-						     ? tr("<b>Mute to me unavailable</b><br>Audio monitoring is unavailable. "
-									 "Right-click to show full settings.")
-						     : tr("<b>Mute to me unavailable</b><br>Audio monitoring is unavailable."))
+		unavailableWhileActive ? tr("<b>Monitoring unavailable</b><br>Audio monitoring became "
+					    "unavailable while muted. Click to turn off Mute to me and restore "
+					    "the saved source state.")
+		: !available
+			? (blockedByOtherInstance    ? tr("<b>Mute to me unavailable</b><br>Another OBS instance owns "
+							     "the Windows mute recovery state. Close that instance and "
+							     "restart this OBS instance.")
+			   : m_compactDockModeActive ? tr("<b>Mute to me unavailable</b><br>Audio monitoring is "
+							  "unavailable. Right-click to show full settings.")
+						     : tr("<b>Mute to me unavailable</b><br>Audio monitoring is "
+							  "unavailable."))
+		: degraded                ? tr("<b>Mute error</b><br>One or more monitored sources could not be "
+							      "updated safely. Monitoring may be audible. Click to disable the "
+							      "control, then enable it again to retry.")
+		: waiting                 ? tr("<b>Mute armed</b><br>No source currently uses OBS Audio Monitoring. "
+							       "Set audio that must also be recorded to <i>Monitor and Output</i>; "
+							       "it will be silenced here automatically. Direct application audio "
+							       "does not pass through this control.")
 		: m_compactDockModeActive ? (active ? tr("<b>Muted to you</b><br>Click to hear monitored audio again. "
 							 "Right-click to show full settings.")
 						    : tr("<b>Mute to me</b><br>Click to stop hearing monitored audio. "
 							 "Recording is unchanged. Right-click to show full settings."))
 					  : tr("<b>Mute to me</b><br>One click stops <i>you</i> from hearing monitored "
-					       "audio — the recording keeps capturing everything at full volume. Works "
-					       "instantly, even while recording, and applies to all scenes.<br><br>It "
-					       "mutes OBS's playback session on Windows (and uses a monitoring-device "
-					       "fallback on other platforms); your recording's audio path is never "
-					       "touched.<br><br>Right-click this button for compact dock options.");
+					       "audio without changing OBS's recording mix. Works instantly, even "
+					       "while recording, and applies to all scenes.<br><br>It suppresses only "
+					       "each source's OBS monitoring branch and safely restores the original "
+					       "state; recording tracks and source volume are untouched.<br><br>Use "
+					       "<i>Monitor and Output</i> for sources that must "
+					       "also be recorded; OBS does not record <i>Monitor Only</i> sources."
+					       "<br><br>Right-click this button for compact dock options.");
 
 	m_syncingMuteUi = true;
 	{
 		const QSignalBlocker block(m_muteToMe);
-		m_muteToMe->setCheckable(available);
-		m_muteToMe->setEnabled(available || m_compactDockModeActive);
+		m_muteToMe->setCheckable(available || active);
+		m_muteToMe->setEnabled(available || active || m_compactDockModeActive);
 		m_muteToMe->setChecked(active);
 		m_muteToMe->setText(text);
 		m_muteToMe->setToolTip(tooltip);
@@ -676,16 +761,33 @@ void PresetDock::syncMuteToMeUi()
 	m_syncingMuteUi = false;
 }
 
+void PresetDock::refreshMuteState()
+{
+	syncMuteToMeUi();
+}
+
 void PresetDock::setCompactDockMode(bool compact, bool save)
 {
 	m_compactDockModeActive = compact;
 
-	if (m_fullControls)
-		m_fullControls->setVisible(!compact);
+	if (m_fullControlsScroll)
+		m_fullControlsScroll->setVisible(!compact);
+	if (m_showFullSettings)
+		m_showFullSettings->setVisible(compact);
 
 	syncMuteToMeUi();
 	updateGeometry();
-	adjustSize();
+
+	// QMainWindow owns the geometry of an attached QDockWidget. Calling
+	// adjustSize() there can expand this dock to the editor's full size and
+	// disturb the user's entire OBS layout. Floating docks are independent and
+	// can still resize themselves to a useful compact/full size.
+	QWidget *ancestor = parentWidget();
+	while (ancestor && !qobject_cast<QDockWidget *>(ancestor))
+		ancestor = ancestor->parentWidget();
+	auto *dock = qobject_cast<QDockWidget *>(ancestor);
+	if (dock && dock->isFloating())
+		dock->adjustSize();
 
 	if (save)
 		saveCompactDockMode(compact);
@@ -740,8 +842,9 @@ void PresetDock::onCopyFromCurrent()
 		m_baseCy->setValue((int)ovi.base_height);
 		m_outputCx->setValue((int)ovi.output_width);
 		m_outputCy->setValue((int)ovi.output_height);
-		if (ovi.fps_den)
-			m_fps->setValue((int)(ovi.fps_num / ovi.fps_den));
+		const uint32_t fps = rounded_integer_fps(ovi.fps_num, ovi.fps_den);
+		if (fps != 0)
+			m_fps->setValue((int)fps);
 	}
 
 	config_t *cfg = obs_frontend_get_profile_config();
@@ -756,12 +859,25 @@ void PresetDock::onCopyFromCurrent()
 
 		const char *fmt = config_get_string(cfg, section, "RecFormat2");
 		if (fmt) {
-			int fi = m_recFormat->findData(QString::fromUtf8(fmt));
+			const QString id = QString::fromUtf8(fmt);
+			int fi = m_recFormat->findData(id);
+			if (fi < 0 && !id.isEmpty()) {
+				m_recFormat->addItem(tr("Current OBS format (%1)").arg(id), id);
+				fi = m_recFormat->count() - 1;
+			}
 			if (fi >= 0)
 				m_recFormat->setCurrentIndex(fi);
 		}
 
-		const uint32_t tracks = (uint32_t)config_get_int(cfg, section, "RecTracks");
+		uint32_t tracks = (uint32_t)config_get_int(cfg, section, "RecTracks");
+		if (fmt && std::strcmp(fmt, "flv") == 0) {
+			if (advanced) {
+				const int flvTrack = (int)config_get_int(cfg, section, "FLVTrack");
+				tracks = flvTrack >= 1 && flvTrack <= 6 ? (1u << (flvTrack - 1)) : 1u;
+			} else {
+				tracks = 1u;
+			}
+		}
 		for (int i = 0; i < 6; ++i)
 			m_track[i]->setChecked((tracks >> i) & 1u);
 
@@ -771,7 +887,7 @@ void PresetDock::onCopyFromCurrent()
 			if (profilePath) {
 				const std::string encPath = std::string(profilePath) + "/recordEncoder.json";
 				bfree(profilePath);
-				obs_data_t *enc = obs_data_create_from_json_file(encPath.c_str());
+				obs_data_t *enc = obs_data_create_from_json_file_safe(encPath.c_str(), "bak");
 				if (enc) {
 					const long long br = obs_data_get_int(enc, "bitrate");
 					if (br > 0)
@@ -782,10 +898,7 @@ void PresetDock::onCopyFromCurrent()
 		}
 	}
 
-	// Skip while "mute to me" is active: on fallback platforms the live device
-	// may be the silent sentinel, and on Windows it is clearer not to overwrite
-	// the user's saved monitor-device choice during a muted state.
-	if (obs_audio_monitoring_available() && !aro_mute_to_me_active()) {
+	if (obs_audio_monitoring_available()) {
 		const char *mdName = nullptr;
 		const char *mdId = nullptr;
 		obs_get_audio_monitoring_device(&mdName, &mdId);
@@ -840,9 +953,14 @@ void PresetDock::showMuteContextMenu(const QPoint &pos)
 	QMenu menu(this);
 	QAction *compactAction =
 		menu.addAction(m_compactDockModeActive ? tr("Show full settings") : tr("Compact dock mode"));
+	QAction *guideAction = menu.addAction(tr("Open audio setup guide"));
 
-	if (menu.exec(m_muteToMe->mapToGlobal(pos)) == compactAction)
+	QAction *selectedAction = menu.exec(m_muteToMe->mapToGlobal(pos));
+	if (selectedAction == compactAction) {
 		setCompactDockMode(!m_compactDockModeActive, true);
+	} else if (selectedAction == guideAction) {
+		QDesktopServices::openUrl(QUrl(QString::fromUtf8(kAudioSetupGuideUrl)));
+	}
 }
 
 void PresetDock::showStatus(const QString &message)

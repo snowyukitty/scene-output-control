@@ -3,8 +3,8 @@
 <head>
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1" />
-<title>Auto Resize Output - User Guide</title>
-<meta name="description" content="User guide for Auto Resize Output, an OBS Studio plugin for per-scene output, recording, and monitoring presets." />
+<title>Scene Output Control - Setup and User Guide</title>
+<meta name="description" content="Set up capture-safe personal mute and per-scene resolution, FPS, recording, and monitoring presets with Scene Output Control, a third-party plugin for OBS Studio." />
 <style>
   :root {
     --bg: #0f1115;
@@ -133,6 +133,13 @@
   .hero { padding: 18px 0 10px; }
   .hero h2 { font-size: 2rem; line-height: 1.2; margin: .2em 0 .35em; }
   .hero p.lead { color: var(--muted); font-size: 1.08rem; margin: 0; }
+  .eyebrow {
+    color: var(--green);
+    font-size: .76rem;
+    font-weight: 800;
+    letter-spacing: .12em;
+    text-transform: uppercase;
+  }
   .pills { display: flex; flex-wrap: wrap; gap: 8px; margin: 16px 0 8px; }
   .pill {
     background: var(--surface);
@@ -165,6 +172,99 @@
   .callout.warn { border-left: 3px solid var(--amber); }
   .callout.danger { border-left: 3px solid var(--red); }
   .callout .ttl { display: block; font-weight: 700; margin-bottom: 2px; }
+  .feature-grid,
+  .setup-grid {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 14px;
+    margin: 18px 0;
+  }
+  .feature-card,
+  .setup-card {
+    display: block;
+    color: var(--text);
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 17px;
+  }
+  a.feature-card:hover {
+    border-color: var(--accent);
+    text-decoration: none;
+  }
+  .feature-card strong,
+  .setup-card strong { display: block; margin-bottom: 4px; }
+  .feature-card p,
+  .setup-card p { color: var(--muted); margin: 0; }
+  .feature-card .number {
+    color: var(--accent);
+    font-size: .78rem;
+    font-weight: 800;
+    letter-spacing: .1em;
+    text-transform: uppercase;
+  }
+  .setup-steps {
+    list-style: none;
+    padding: 0;
+    margin: 18px 0;
+    counter-reset: setup;
+  }
+  .setup-steps > li {
+    counter-increment: setup;
+    position: relative;
+    margin: 0 0 12px;
+    padding: 14px 16px 14px 54px;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+  }
+  .setup-steps > li::before {
+    content: counter(setup);
+    position: absolute;
+    left: 15px;
+    top: 14px;
+    width: 25px;
+    height: 25px;
+    display: grid;
+    place-items: center;
+    border-radius: 50%;
+    color: #fff;
+    background: var(--accent);
+    font-size: .78rem;
+    font-weight: 800;
+  }
+  .setup-steps strong { display: block; margin-bottom: 2px; }
+  .route-map {
+    display: grid;
+    grid-template-columns: minmax(130px, 1fr) 36px minmax(150px, 1.25fr) 36px minmax(145px, 1fr);
+    gap: 8px;
+    align-items: center;
+  }
+  .route-node {
+    min-height: 70px;
+    display: grid;
+    place-items: center;
+    text-align: center;
+    padding: 10px;
+    border: 1px solid var(--border);
+    border-radius: 9px;
+    background: var(--surface-2);
+    font-weight: 700;
+  }
+  .route-node.output { border-color: var(--green); }
+  .route-arrow { color: var(--accent); text-align: center; font-size: 1.5rem; }
+  .checklist {
+    list-style: none;
+    padding: 0;
+  }
+  .checklist li { position: relative; padding-left: 1.7em; }
+  .checklist li::before {
+    content: "✓";
+    position: absolute;
+    left: 0;
+    color: var(--green);
+    font-weight: 800;
+  }
   .uichip {
     display: inline-block;
     background: var(--surface-2);
@@ -182,7 +282,6 @@
     border-radius: var(--radius);
     padding: 18px;
   }
-  figure svg { width: 100%; height: auto; display: block; }
   figcaption { color: var(--muted); font-size: .86rem; margin-top: 10px; text-align: center; }
   details {
     background: var(--surface);
@@ -198,18 +297,25 @@
     nav.toc { display: none; }
     .layout { padding: 0 18px; }
   }
+  @media (max-width: 640px) {
+    .feature-grid,
+    .setup-grid { grid-template-columns: 1fr; }
+    .route-map { grid-template-columns: 1fr; }
+    .route-arrow { transform: rotate(90deg); }
+    .hero h2 { font-size: 1.7rem; }
+  }
 </style>
 </head>
 <body>
 <header class="topbar">
   <div class="topbar-inner">
-    <div class="logo">AR</div>
+    <div class="logo">SO</div>
     <div>
-      <h1>Auto Resize Output</h1>
-      <span class="ver">OBS Studio plugin guide</span>
+      <h1>Scene Output Control</h1>
+      <span class="ver">Third-party OBS Studio plugin guide</span>
     </div>
     <div class="spacer"></div>
-    <a class="ghlink" href="https://github.com/snowyukitty/obs-auto-resize-output" target="_blank" rel="noopener">GitHub</a>
+    <a class="ghlink" href="https://github.com/snowyukitty/scene-output-control" target="_blank" rel="noopener">GitHub</a>
   </div>
 </header>
 
@@ -218,10 +324,11 @@
     <h2>Start</h2>
     <a href="#intro">What it does</a>
     <a href="#install">Install</a>
+    <a href="#quick-audio">Quick audio setup</a>
     <a href="#dock">Dock overview</a>
     <h2>Presets</h2>
     <a href="#enable">Enable overrides</a>
-    <a href="#video">Video</a>
+    <a href="#video">Per-scene resize</a>
     <a href="#recording">Recording</a>
     <a href="#actions">Actions</a>
     <h2>Monitoring</h2>
@@ -236,19 +343,32 @@
 
   <main>
     <div class="hero">
-      <h2>Per-scene output, recording, and monitoring presets for OBS Studio</h2>
-      <p class="lead">Switch scenes and automatically apply that scene's resolution, FPS, recording folder, format, tracks, bitrate, and monitoring device. A global mute control lets you stop hearing monitored audio without changing the recording.</p>
+      <span class="eyebrow">Two controls, one OBS dock</span>
+      <h2>Scene-aware output presets and personal audio control</h2>
+      <p class="lead">Automatically apply each scene's output settings, or stop hearing monitored audio while OBS keeps recording it.</p>
       <div class="pills">
-        <span class="pill">Per-scene presets</span>
-        <span class="pill">Scene duplication friendly</span>
-        <span class="pill">Monitoring-safe mute</span>
-        <span class="pill">Compact OBS dock</span>
+        <span class="pill">Resolution and FPS</span>
+        <span class="pill">Recording presets</span>
+        <span class="pill">Monitoring device</span>
+        <span class="pill">Mute to me</span>
       </div>
     </div>
 
     <section id="intro">
       <h3>What It Does</h3>
-      <p>OBS output and recording settings are normally profile-wide. Auto Resize Output lets each scene store the settings it should apply when that scene becomes active.</p>
+      <p>Scene Output Control has two main jobs:</p>
+      <div class="feature-grid">
+        <a class="feature-card" href="#video">
+          <span class="number">Feature 01</span>
+          <strong>Per-scene output presets</strong>
+          <p>Apply resolution, FPS, recording, and monitoring-device settings when a scene becomes active.</p>
+        </a>
+        <a class="feature-card" href="#quick-audio">
+          <span class="number">Feature 02</span>
+          <strong>Personal monitoring mute</strong>
+          <p>Stop hearing OBS-monitored sources without removing them from the recording mix.</p>
+        </a>
+      </div>
       <p>Presets are stored in the scene source's <code>private_settings</code>, so they are saved with the scene collection and copied when a scene is duplicated.</p>
       <div class="callout note">
         <span class="ttl">Scene presets apply when entering a scene</span>
@@ -267,8 +387,65 @@
       <ol>
         <li>Start OBS.</li>
         <li>Open <span class="uichip">Docks</span>.</li>
-        <li>Enable <span class="uichip">Auto Resize Output</span>.</li>
+        <li>Enable <span class="uichip">Scene Output Control</span>.</li>
       </ol>
+      <div class="callout note">
+        <span class="ttl">The installed folder and DLL keep the original name</span>
+        <p><code>obs-auto-resize-output</code> remains the technical package identifier so updates replace earlier versions and preserve existing scene presets and OBS dock layouts.</p>
+      </div>
+    </section>
+
+    <section id="quick-audio">
+      <span class="eyebrow">One-time setup</span>
+      <h3>Mute for Me, Keep Recording</h3>
+      <p>After this one-time routing setup, <span class="uichip">Mute to me</span> is a one-click control. The safe path is for OBS to capture the application, send it to the recording mix, and separately monitor it to your headphones.</p>
+
+      <figure>
+        <div class="route-map" role="img" aria-label="Capture-safe audio route from the application through OBS to recording and headphones">
+          <div class="route-node">Application audio</div>
+          <div class="route-arrow" aria-hidden="true">→</div>
+          <div class="route-node">OBS application, window, or game capture</div>
+          <div class="route-arrow" aria-hidden="true">→</div>
+          <div class="route-node output">Recording + OBS monitoring</div>
+        </div>
+        <figcaption>The plugin controls the OBS monitoring branch. Direct Windows playback to your headphones bypasses it.</figcaption>
+      </figure>
+
+      <ol class="setup-steps">
+        <li>
+          <strong>Remove direct playback from your headphones.</strong>
+          In Windows <span class="uichip">Settings → System → Sound → Volume mixer</span>, route the application to another output that you do not listen to, such as a monitor output or a virtual audio cable.
+        </li>
+        <li>
+          <strong>Disable duplicate desktop capture.</strong>
+          In OBS <span class="uichip">Settings → Audio → Global Audio Devices</span>, set <span class="uichip">Desktop Audio</span> to <span class="uichip">Disabled</span> when the application source already captures its own audio.
+        </li>
+        <li>
+          <strong>Choose your headphones explicitly.</strong>
+          In OBS <span class="uichip">Settings → Audio → Advanced</span>, set <span class="uichip">Monitoring Device</span> to the headphones you actually use instead of <span class="uichip">Default</span>.
+        </li>
+        <li>
+          <strong>Send the source to both branches.</strong>
+          Enable audio capture on the application/window/game source. In <span class="uichip">Advanced Audio Properties</span>, choose <span class="uichip">Monitor and Output</span> and select a recorded track.
+        </li>
+      </ol>
+
+      <div class="callout tip">
+        <span class="ttl">Which audio track should I select?</span>
+        <p>No special track number is required. <strong>Track 1 is the simplest default.</strong> The source's checked track in Advanced Audio Properties must also be enabled under <span class="uichip">Settings → Output → Recording</span>. If those choices do not match, the recording will not contain that source.</p>
+      </div>
+
+      <h4>Verify the result</h4>
+      <ul class="checklist">
+        <li>With <span class="uichip">Hear</span> active, you hear the application once, without an echo.</li>
+        <li>With <span class="uichip">Mute to me</span> active, you hear nothing from that source.</li>
+        <li>The OBS audio meter keeps moving and a short test recording still contains the audio.</li>
+      </ul>
+
+      <details>
+        <summary>Why can this not be completely automatic?</summary>
+        <p>The plugin can configure OBS-owned settings, but Windows application routing is outside the OBS audio graph. It cannot safely guess which physical device you are listening to or silently install a virtual audio driver. A future setup checker can diagnose track, monitoring, and duplicate Desktop Audio settings; Windows routing will still require one explicit choice from you.</p>
+      </details>
     </section>
 
     <section id="dock">
@@ -276,7 +453,8 @@
       <table>
         <tr><th>Control</th><th>Purpose</th></tr>
         <tr><td><span class="uichip">Mute to me</span></td><td>Global toggle that stops you from hearing OBS-monitored audio while recording remains unchanged.</td></tr>
-        <tr><td><span class="uichip">Compact dock mode</span></td><td>Collapses the OBS dock to only the mute button. Right-click the compact button and choose <span class="uichip">Show full settings</span> to expand again.</td></tr>
+        <tr><td><span class="uichip">Audio setup guide...</span></td><td>Opens the one-time capture-safe routing checklist. In compact mode, right-click the mute button to find the same action.</td></tr>
+        <tr><td><span class="uichip">Compact dock mode</span></td><td>Keeps the monitoring control small. Click <span class="uichip">Show resize / output settings</span>, or right-click the mute button and choose <span class="uichip">Show full settings</span>, to expand again. The full editor scrolls inside the dock's existing space instead of resizing the attached OBS layout.</td></tr>
         <tr><td><span class="uichip">Editing scene</span></td><td>Selects which scene preset you are editing. The dock follows the program scene until you manually select another scene.</td></tr>
         <tr><td><span class="uichip">Enable per-scene overrides</span></td><td>Master switch for the selected scene preset.</td></tr>
         <tr><td><span class="uichip">Video</span></td><td>Base resolution, output resolution, and FPS overrides.</td></tr>
@@ -296,7 +474,21 @@
     </section>
 
     <section id="video">
-      <h3>Video</h3>
+      <span class="eyebrow">The resize feature</span>
+      <h3>Per-Scene Resolution and FPS</h3>
+      <p>This is the original resize feature: the plugin changes OBS's Base (canvas) resolution, Output (scaled) resolution, and FPS when you enter a scene.</p>
+      <div class="callout note">
+        <span class="ttl">It resizes OBS output settings, not individual sources</span>
+        <p>It does not automatically fit, crop, or stretch scene items. Source layout and transforms remain OBS scene controls.</p>
+      </div>
+      <h4>Set it up</h4>
+      <ol>
+        <li>Open <span class="uichip">Docks → Scene Output Control</span>.</li>
+        <li>Choose the target scene under <span class="uichip">Editing scene</span>.</li>
+        <li>Enable <span class="uichip">Enable per-scene overrides for this scene</span>.</li>
+        <li>Check <span class="uichip">Base resolution</span>, <span class="uichip">Output resolution</span>, and/or <span class="uichip">FPS</span>, then enter the values for this scene.</li>
+        <li>Use <span class="uichip">Apply now</span>, or switch away and back to apply the preset automatically.</li>
+      </ol>
       <table>
         <tr><th>Setting</th><th>Meaning</th></tr>
         <tr><td><span class="uichip">Base (canvas) resolution</span></td><td>The OBS composition canvas size.</td></tr>
@@ -331,38 +523,25 @@
 
     <section id="audio-concept">
       <h3>Monitoring Vs Recording</h3>
-      <p>OBS audio has two separate paths. The output path goes to recording and streaming. The monitoring path is playback for you to hear. Auto Resize Output only changes the monitoring path for monitoring features.</p>
+      <p>OBS audio has two separate paths. The output mix goes to recording and streaming; the monitoring path is playback for you to hear. Scene Output Control only changes the monitoring path for monitoring features.</p>
 
       <figure>
-        <svg viewBox="0 0 720 280" role="img" aria-label="Audio path diagram">
-          <defs>
-            <marker id="arrowg" markerWidth="10" markerHeight="10" refX="8" refY="3" orient="auto" markerUnits="strokeWidth">
-              <path d="M0,0 L8,3 L0,6 Z" fill="#3fb98c"/>
-            </marker>
-            <marker id="arrowb" markerWidth="10" markerHeight="10" refX="8" refY="3" orient="auto" markerUnits="strokeWidth">
-              <path d="M0,0 L8,3 L0,6 Z" fill="#4f8cff"/>
-            </marker>
-          </defs>
-          <rect x="20" y="110" width="150" height="60" rx="8" fill="#1e222b" stroke="#2a2f3a"/>
-          <text x="95" y="140" fill="#e6e8ec" font-size="15" font-weight="700" text-anchor="middle">Source</text>
-          <text x="95" y="160" fill="#9aa3b2" font-size="12" text-anchor="middle">Mic / capture / app audio</text>
-          <line x1="170" y1="135" x2="430" y2="80" stroke="#4f8cff" stroke-width="2.5" marker-end="url(#arrowb)"/>
-          <text x="300" y="92" fill="#4f8cff" font-size="12" font-weight="600" text-anchor="middle" transform="rotate(-12 300 92)">Output</text>
-          <rect x="440" y="50" width="250" height="60" rx="8" fill="#13251d" stroke="#3fb98c"/>
-          <text x="565" y="78" fill="#e6e8ec" font-size="15" font-weight="700" text-anchor="middle">Recording / streaming</text>
-          <text x="565" y="97" fill="#3fb98c" font-size="11.5" text-anchor="middle">Captured content and volume</text>
-          <line x1="170" y1="150" x2="430" y2="205" stroke="#3fb98c" stroke-width="2.5" marker-end="url(#arrowg)"/>
-          <text x="300" y="200" fill="#3fb98c" font-size="12" font-weight="600" text-anchor="middle" transform="rotate(12 300 200)">Monitor</text>
-          <rect x="440" y="175" width="250" height="60" rx="8" fill="#1e222b" stroke="#2a2f3a"/>
-          <text x="565" y="203" fill="#e6e8ec" font-size="15" font-weight="700" text-anchor="middle">What you hear</text>
-          <text x="565" y="222" fill="#9aa3b2" font-size="11.5" text-anchor="middle">Controlled by monitoring features</text>
-        </svg>
+        <div class="setup-grid" role="img" aria-label="OBS source audio splits into recording output and personal monitoring">
+          <div class="setup-card">
+            <strong>OBS output mix → Recording / streaming</strong>
+            <p>Captured content and recorded volume continue unchanged.</p>
+          </div>
+          <div class="setup-card">
+            <strong>OBS monitoring → What you hear</strong>
+            <p>Mute to me temporarily suppresses only this personal playback branch.</p>
+          </div>
+        </div>
         <figcaption>Monitoring changes affect what you hear, not what OBS records or streams.</figcaption>
       </figure>
 
       <div class="callout danger">
-        <span class="ttl">The sound must pass through OBS monitoring</span>
-        <p>Open OBS Advanced Audio Properties and set the source's Audio Monitoring to <strong>Monitor and Output</strong> or <strong>Monitor Only</strong>. If the operating system is playing the sound directly to your headphones, OBS monitoring controls cannot selectively mute it.</p>
+        <span class="ttl">To hear it and record it, use Monitor and Output</span>
+        <p>Open OBS Advanced Audio Properties, set the source's Audio Monitoring to <strong>Monitor and Output</strong>, and assign it to a recorded track. <strong>Monitor Only</strong> can also be silenced, but OBS intentionally excludes that source from recording and streaming. Audio played directly by the operating system does not pass through this control.</p>
       </div>
     </section>
 
@@ -375,13 +554,21 @@
       <h3>Mute To Me</h3>
       <p>The top button globally stops you from hearing OBS-monitored audio. Press it again to hear monitoring again.</p>
       <ul>
-        <li>Windows: mutes OBS playback sessions on the current monitoring endpoint and restores their previous mute state when disabled.</li>
-        <li>Other platforms: routes OBS monitoring to a silent sentinel device as a fallback.</li>
-        <li>Recording content, recorded volume, source volume, and track selection are not changed.</li>
+        <li>For <strong>Monitor and Output</strong>, the plugin temporarily disables only the monitoring branch. The source remains in the OBS output/encoder mix.</li>
+        <li>For <strong>Monitor Only</strong>, the plugin temporarily mutes the source because OBS already excludes it from recording and streaming.</li>
+        <li>If no source currently uses audio monitoring, the button shows <span class="uichip">Armed</span> and automatically suppresses a source when monitoring starts.</li>
+        <li>If a source cannot be changed or restored safely, the button shows <span class="uichip">Mute error</span> instead of claiming that monitoring is silent.</li>
+        <li>The plugin stores each source's exact prior state in private scene-collection data before changing it, restores it when disabled or unloaded, and retries recovery after an interrupted OBS run.</li>
+        <li>Only one OBS process owns Windows recovery state. Later OBS instances show this control as unavailable.</li>
+        <li>OBS recording tracks, source volume, and encoder settings are not changed.</li>
       </ul>
       <details>
-        <summary>Why not toggle each source's monitoring type?</summary>
-        <p>OBS persists each source's monitoring type when saving a scene collection. If a plugin changed monitoring types for mute, a save while muted could permanently overwrite a user's <code>Monitor and Output</code> setup. This plugin avoids that path.</p>
+        <summary>How is the original monitoring setup protected?</summary>
+        <p>OBS persists each source's monitoring type when saving a scene collection. The plugin therefore writes recovery metadata into the source's private settings before changing monitoring and immediately saves both together. Unmute, unload, and next-start recovery restore the exact prior state.</p>
+      </details>
+      <details>
+        <summary>Why not mute the OBS Windows playback session?</summary>
+        <p>Application, window, and game audio capture can share an OBS-owned Windows audio session with monitoring. Muting that session can also silence the captured signal and the recording. This control stays at the per-source monitoring boundary instead.</p>
       </details>
     </section>
 
@@ -391,6 +578,7 @@
         <li>Resolution and FPS changes require OBS outputs to be idle, unless the plugin restarts recording.</li>
         <li>Recording bitrate override requires Advanced output mode.</li>
         <li><span class="uichip">Mute to me</span> only controls audio heard through OBS monitoring.</li>
+        <li>Only the first active OBS instance can use Windows <span class="uichip">Mute to me</span>; later instances must restart after the owner exits.</li>
         <li>Recording folder, format, tracks, and bitrate apply to the next recording, not the current output.</li>
       </ul>
     </section>
@@ -409,15 +597,19 @@
       <h3>FAQ</h3>
       <details>
         <summary>I clicked Mute to me but still hear sound.</summary>
-        <p>First make sure OBS monitoring is actually producing sound. Then verify the sound is not being played directly by the operating system. The source must use OBS monitoring for the plugin to control what you hear.</p>
+        <p>If the sound becomes quieter but does not disappear, you are probably hearing two paths: OBS monitoring plus direct Windows playback. Follow <a href="#quick-audio">Quick Audio Setup</a> so the application does not play directly to your headphones, disable duplicate Desktop Audio capture, and use <strong>Monitor and Output</strong> for the source.</p>
+      </details>
+      <details>
+        <summary>Does audio need to use a specific track?</summary>
+        <p>No. Track 1 is the simplest default, but any track from 1 through 6 works when the source is assigned to it and the same track is enabled for recording output.</p>
       </details>
       <details>
         <summary>Resolution did not change when I switched scenes.</summary>
-        <p>An OBS output is probably active. OBS does not allow video pipeline changes while recording, streaming, or virtual camera output is running.</p>
+        <p>First confirm that the scene preset and the individual video override are enabled. If they are, an OBS output is probably active: OBS does not allow video pipeline changes while recording, streaming, replay buffer, or virtual camera output is running.</p>
       </details>
       <details>
         <summary>How do I leave compact dock mode?</summary>
-        <p>Right-click the compact <span class="uichip">Mute</span> / <span class="uichip">Hear</span> button and choose <span class="uichip">Show full settings</span>.</p>
+        <p>Click <span class="uichip">Show resize / output settings</span>. You can also right-click the compact <span class="uichip">Mute</span> / <span class="uichip">Hear</span> button and choose <span class="uichip">Show full settings</span>.</p>
       </details>
       <details>
         <summary>Do presets follow duplicated scenes?</summary>
@@ -428,7 +620,7 @@
 </div>
 
 <footer>
-  Auto Resize Output - GPL-2.0-or-later - <a href="https://github.com/snowyukitty/obs-auto-resize-output" target="_blank" rel="noopener">github.com/snowyukitty/obs-auto-resize-output</a>
+  Scene Output Control - GPL-2.0-or-later - <a href="https://github.com/snowyukitty/scene-output-control" target="_blank" rel="noopener">github.com/snowyukitty/scene-output-control</a>
 </footer>
 </body>
 </html>

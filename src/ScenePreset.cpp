@@ -1,6 +1,8 @@
 // SPDX-License-Identifier: GPL-2.0-or-later
 
 #include "ScenePreset.hpp"
+#include "PresetValidation.hpp"
+#include "plugin-log.hpp"
 
 #include <obs.h>
 
@@ -11,6 +13,9 @@ ScenePreset preset_load(obs_source_t *scene)
 		return p;
 
 	obs_data_t *priv = obs_source_get_private_settings(scene);
+	if (!priv)
+		return p;
+
 	obs_data_t *d = obs_data_get_obj(priv, kPresetKey);
 	if (d) {
 		// Provide sane defaults so a partially-written object never
@@ -57,17 +62,35 @@ ScenePreset preset_load(obs_source_t *scene)
 		obs_data_release(d);
 	}
 	obs_data_release(priv);
+
+	if (normalize_scene_preset(p)) {
+		const char *scene_name = obs_source_get_name(scene);
+		ARO_LOG(LOG_WARNING, "Normalized invalid or unsupported preset values for scene '%s'",
+			scene_name ? scene_name : "");
+	}
 	return p;
 }
 
-void preset_save(obs_source_t *scene, const ScenePreset &p)
+void preset_save(obs_source_t *scene, const ScenePreset &preset)
 {
 	if (!scene)
 		return;
 
 	obs_data_t *priv = obs_source_get_private_settings(scene);
-	obs_data_t *d = obs_data_create();
+	if (!priv)
+		return;
 
+	ScenePreset p = preset;
+	normalize_scene_preset(p);
+	obs_data_t *d = obs_data_get_obj(priv, kPresetKey);
+	if (!d)
+		d = obs_data_create();
+
+	// Update fields in the existing object so a newer plugin's unknown keys
+	// survive an edit by this version. Never downgrade a future schema marker.
+	const long long stored_schema_version = obs_data_get_int(d, "schema_version");
+	if (stored_schema_version <= kPresetSchemaVersion)
+		obs_data_set_int(d, "schema_version", kPresetSchemaVersion);
 	obs_data_set_bool(d, "enabled", p.enabled);
 
 	obs_data_set_bool(d, "use_base_res", p.use_base_res);

@@ -6,8 +6,8 @@
 # CMakePresets.json, buildspec.json, GitHub Actions, clang-format) INTO this
 # repository, then patches it for this plugin:
 #   * buildspec.json   -> our name / displayName / version / author
-#   * CMakeLists.txt   -> enables ENABLE_QT + ENABLE_FRONTEND_API and lists our
-#                         C++ sources instead of the template's plugin-main.c
+#   * CMakeLists.txt   -> enables ENABLE_QT + ENABLE_FRONTEND_API and lists the
+#                         plugin's C++ sources instead of template plugin-main.c
 #
 # After running this you have a fully buildable, template-based plugin. The
 # template's buildspec then auto-downloads OBS + Qt6 + deps at configure time;
@@ -22,8 +22,8 @@
 param(
     [string]$TemplateRepo = "https://github.com/obsproject/obs-plugintemplate.git",
     [string]$PluginName   = "obs-auto-resize-output",
-    [string]$DisplayName  = "Auto Resize Output",
-    [string]$Version      = "1.0.0",
+    [string]$DisplayName  = "Scene Output Control",
+    [string]$Version      = "1.1.1",
     [string]$Author       = "snowyukitty"
 )
 
@@ -114,6 +114,8 @@ target_sources(
   PRIVATE
     src/plugin-main.cpp
     src/ScenePreset.cpp
+    src/PresetValidation.cpp
+    src/AudioSessionState.cpp
     src/ApplyPreset.cpp
     src/PresetDock.cpp)
 "@
@@ -140,7 +142,7 @@ target_sources(
     if (-not ($qtOn -and $feOn -and $srcOk)) {
         Write-Warning "One or more CMakeLists patches did not match. Open CMakeLists.txt and verify:"
         Write-Warning "  * option(ENABLE_QT ...) and option(ENABLE_FRONTEND_API ...) are set to ON"
-        Write-Warning "  * target_sources(...) lists the four src/*.cpp files"
+        Write-Warning "  * target_sources(...) lists the current src/*.cpp files"
     }
 
     # --- 5. Restore exec bits / symlinks lost during the Windows copy -----
