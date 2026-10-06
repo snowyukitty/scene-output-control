@@ -401,6 +401,12 @@
       <h3>Mute for Me, Keep Recording</h3>
       <p>After this one-time routing setup, <span class="uichip">Mute to me</span> is a one-click control. The safe path is for OBS to capture the application, send it to the recording mix, and separately monitor it to your headphones.</p>
 
+      <div class="callout tip">
+        <span class="ttl">Already using a virtual cable, but mute still has sound?</span>
+        <p>Routing the application to <strong>CABLE Input</strong> is only one part of the setup. If <strong>Listen to this device</strong> is enabled for <strong>CABLE Output</strong>, Windows also forwards that sound directly to your headphones, outside OBS. Turn Listen off and hear the source through OBS <strong>Monitor and Output</strong>.</p>
+        <p>In the next plugin build, <span class="uichip">Check audio setup...</span> lists enabled Windows Listen routes and can turn Listen off for a selected device. In compact mode, right-click the mute button to open the check. It includes a routing checklist and a shortcut to Windows Sound settings.</p>
+      </div>
+
       <figure>
         <div class="route-map" role="img" aria-label="Capture-safe audio route from the application through OBS to recording and headphones">
           <div class="route-node">Application audio</div>

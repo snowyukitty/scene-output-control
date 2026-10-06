@@ -81,6 +81,15 @@ cmake --build build --config RelWithDebInfo
 
 Close OBS before replacing the DLL.
 
+For a local Windows build, stage the install layout and use the checked-in helper:
+
+```powershell
+cmake --install build_vs18 --config RelWithDebInfo --prefix artifacts/audio-setup-check
+pwsh -File scripts/Install-LocalBuild.ps1
+```
+
+Replace `build_vs18` with your actual build directory. The helper refuses to run while OBS is open, backs up the replaced files, and verifies the installed DLL and locale file by SHA-256. It does not restart OBS or change audio settings. Use `-BuildDirectory` or `-InstallRoot` for a different staged build or plugin destination.
+
 Windows layout:
 
 ```text

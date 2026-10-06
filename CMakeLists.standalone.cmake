@@ -19,22 +19,33 @@ find_package(libobs REQUIRED)
 find_package(obs-frontend-api REQUIRED)
 find_package(Qt6 REQUIRED COMPONENTS Core Widgets)
 
-add_library(${PROJECT_NAME} MODULE
-  src/plugin-main.cpp
-  src/ScenePreset.cpp
-  src/ApplyPreset.cpp
-  src/PresetDock.cpp)
+add_library(
+    ${PROJECT_NAME}
+    MODULE
+    src/plugin-main.cpp
+    src/ScenePreset.cpp
+    src/PresetValidation.cpp
+    src/AudioSessionState.cpp
+    src/AudioSetup.cpp
+    src/ApplyPreset.cpp
+    src/PresetDock.cpp
+)
 
 target_include_directories(${PROJECT_NAME} PRIVATE src)
 
-target_compile_definitions(${PROJECT_NAME}
-  PRIVATE PLUGIN_VERSION="${PROJECT_VERSION}")
+target_compile_definitions(
+    ${PROJECT_NAME}
+    PRIVATE PLUGIN_VERSION="${PROJECT_VERSION}"
+)
 
-target_link_libraries(${PROJECT_NAME} PRIVATE
-  OBS::libobs
-  OBS::obs-frontend-api
-  Qt6::Core
-  Qt6::Widgets)
+target_link_libraries(
+    ${PROJECT_NAME}
+    PRIVATE OBS::libobs OBS::obs-frontend-api Qt6::Core Qt6::Widgets
+)
+
+if(WIN32)
+    target_link_libraries(${PROJECT_NAME} PRIVATE ole32 uuid)
+endif()
 
 # OBS expects the module file to be named exactly "<name>.{dll,so}" with no
 # "lib" prefix.
@@ -46,7 +57,9 @@ set_target_properties(${PROJECT_NAME} PROPERTIES PREFIX "")
 #   %ProgramData%\obs-studio\plugins\obs-auto-resize-output\bin\64bit\
 #   %ProgramData%\obs-studio\plugins\obs-auto-resize-output\data\
 # ---------------------------------------------------------------------------
-install(TARGETS ${PROJECT_NAME}
-  LIBRARY DESTINATION "${PROJECT_NAME}/bin/64bit"
-  RUNTIME DESTINATION "${PROJECT_NAME}/bin/64bit")
+install(
+    TARGETS ${PROJECT_NAME}
+    LIBRARY DESTINATION "${PROJECT_NAME}/bin/64bit"
+    RUNTIME DESTINATION "${PROJECT_NAME}/bin/64bit"
+)
 install(DIRECTORY data/ DESTINATION "${PROJECT_NAME}/data")

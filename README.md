@@ -24,6 +24,7 @@ Global controls:
 - **Mute to me**: one click stops *you* from hearing OBS-monitored audio without changing OBS's internal recording/streaming mix.
 - **Compact dock mode**: keeps the mute control small and shows a clear `Show resize / output settings` button for returning to the full panel. The full editor scrolls inside the dock's existing space so expanding it does not resize the attached OBS layout. The mute button's right-click menu provides the same action.
 - **Audio setup guide**: opens the capture-safe routing checklist from the full dock or the compact button's context menu.
+- **Check audio setup**: lists active recording devices with Windows **Listen to this device** enabled, shows their playback destination, and lets you turn off Listen for a selected device. A hint appears while muted if a Windows Listen route may bypass OBS. The check also includes a capture and recording checklist; application output routing and third-party mixers still need manual verification.
 
 ## Important OBS Limitation
 
@@ -71,6 +72,14 @@ Recommended Windows setup:
 6. Make a short test recording, toggle **Mute to me**, and confirm that the source meter continues moving and the saved file still contains audio.
 
 For a browser or game that still plays directly to the listening device, route the application to a virtual audio cable or another device you are not listening to, capture that device in OBS, and listen through OBS **Monitor and Output**. Do not enable Windows **Listen to this device** for that route, because it bypasses the plugin's OBS-monitoring control. See OBS's [Application Audio Capture Guide](https://obsproject.com/kb/application-audio-capture-guide) for the capture and routing options.
+
+### Check audio setup in the dock
+
+Click **Check audio setup...**, or right-click the mute button in compact mode and choose the same action. On Windows, the panel reads active recording devices and lists any enabled **Listen to this device** routes. Select the device carrying your captured audio, such as **CABLE Output**, then click **Turn off Listen for selected device**. The plugin changes that device's Listen setting through the Windows audio property store and reads it back to verify the change. This is a permanent setup change; you can re-enable Listen in **Windows Sound -> Recording -> device Properties -> Listen**.
+
+The intended virtual-cable route is **application -> CABLE Input -> OBS capture -> recording + OBS monitoring -> headphones**. Windows Listen adds a separate route from **CABLE Output -> headphones** that the plugin's mute cannot control. Already having the application routed to CABLE Input does not prevent this extra route.
+
+Use **Check again** after changing settings, or **Windows Sound...** to open the recording-device settings. A clean Windows Listen check only verifies that specific forwarding mechanism; it does not prove that application output routing, mixer forwarding, monitoring availability, or the saved recording is correct. Finish with the short recording test in the panel.
 
 ## Usage
 

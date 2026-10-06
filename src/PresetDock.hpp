@@ -45,6 +45,7 @@ private slots:
 	void onMuteToMeToggled(bool checked);
 	void onCompactDockModeClicked();
 	void showMuteContextMenu(const QPoint &pos);
+	void showAudioSetupCheck();
 
 private:
 	void buildUi();
@@ -54,6 +55,7 @@ private:
 	void updateModeLabel();
 	void setMuteToMeFromUi(bool checked);
 	void syncMuteToMeUi();
+	void refreshAudioSetupHint();
 	void setCompactDockMode(bool compact, bool save);
 	void loadCompactDockMode();
 	void saveCompactDockMode(bool compact);
@@ -72,6 +74,7 @@ private:
 	bool m_compactDockModeActive = false;
 
 	QPushButton *m_muteToMe = nullptr;
+	QLabel *m_audioSetupHint = nullptr;
 	QPushButton *m_showFullSettings = nullptr;
 	QWidget *m_fullControls = nullptr;
 	QScrollArea *m_fullControlsScroll = nullptr;

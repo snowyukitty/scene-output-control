@@ -4,6 +4,7 @@
 #include "ScenePreset.hpp"
 #include "PresetValidation.hpp"
 #include "ApplyPreset.hpp"
+#include "AudioSetup.hpp"
 
 #include <obs.h>
 #include <obs-frontend-api.h>
@@ -13,6 +14,8 @@
 #include <QCheckBox>
 #include <QComboBox>
 #include <QDesktopServices>
+#include <QDialog>
+#include <QDialogButtonBox>
 #include <QDockWidget>
 #include <QFileDialog>
 #include <QFrame>
@@ -21,12 +24,16 @@
 #include <QHBoxLayout>
 #include <QLabel>
 #include <QLineEdit>
+#include <QListWidget>
 #include <QMenu>
 #include <QPushButton>
+#include <QProcess>
 #include <QScrollArea>
 #include <QSignalBlocker>
 #include <QSizePolicy>
 #include <QSpinBox>
+#include <QTextBrowser>
+#include <QTimer>
 #include <QUrl>
 #include <QVBoxLayout>
 
@@ -86,6 +93,13 @@ PresetDock::PresetDock(QWidget *parent) : QWidget(parent)
 	loadFromScene();
 	loadCompactDockMode();
 	syncMuteToMeUi();
+	refreshAudioSetupHint();
+#ifdef _WIN32
+	auto *audioSetupTimer = new QTimer(this);
+	audioSetupTimer->setInterval(5000);
+	connect(audioSetupTimer, &QTimer::timeout, this, &PresetDock::refreshAudioSetupHint);
+	audioSetupTimer->start();
+#endif
 }
 
 PresetDock::~PresetDock() = default;
@@ -123,6 +137,11 @@ void PresetDock::buildUi()
 						    : tr("Mute to me (stop hearing; keep recording)"));
 	m_muteToMe->setContextMenuPolicy(Qt::CustomContextMenu);
 	root->addWidget(m_muteToMe);
+	m_audioSetupHint = new QLabel(this);
+	m_audioSetupHint->setWordWrap(true);
+	m_audioSetupHint->setVisible(false);
+	connect(m_audioSetupHint, &QLabel::linkActivated, this, &PresetDock::showAudioSetupCheck);
+	root->addWidget(m_audioSetupHint);
 
 	m_showFullSettings = new QPushButton(tr("Show resize / output settings"));
 	m_showFullSettings->setToolTip(tr("Leave compact mode and show per-scene resolution, FPS, "
@@ -155,10 +174,15 @@ void PresetDock::buildUi()
 	audioSetupGuide->setToolTip(tr("Open the step-by-step guide for hearing captured audio through OBS, "
 				       "muting it locally, and keeping it in the recording."));
 	auto *dockActions = new QHBoxLayout();
+	auto *audioSetupCheck = new QPushButton(tr("Check audio setup..."));
+	audioSetupCheck->setToolTip(tr("Check Windows Listen routes that may bypass Mute to me, "
+				       "and review the capture and recording checklist."));
+	dockActions->addWidget(audioSetupCheck);
 	dockActions->addWidget(audioSetupGuide);
 	dockActions->addStretch(1);
 	dockActions->addWidget(m_compactDockMode);
 	fullRoot->addLayout(dockActions);
+	connect(audioSetupCheck, &QPushButton::clicked, this, &PresetDock::showAudioSetupCheck);
 	connect(audioSetupGuide, &QPushButton::clicked, this,
 		[]() { QDesktopServices::openUrl(QUrl(QString::fromUtf8(kAudioSetupGuideUrl))); });
 
@@ -697,6 +721,7 @@ void PresetDock::setMuteToMeFromUi(bool checked)
 
 	aro_set_mute_to_me(checked);
 	syncMuteToMeUi();
+	refreshAudioSetupHint();
 }
 
 void PresetDock::syncMuteToMeUi()
@@ -764,6 +789,140 @@ void PresetDock::syncMuteToMeUi()
 void PresetDock::refreshMuteState()
 {
 	syncMuteToMeUi();
+	refreshAudioSetupHint();
+}
+
+void PresetDock::refreshAudioSetupHint()
+{
+	if (!aro_mute_to_me_active()) {
+		m_audioSetupHint->hide();
+		return;
+	}
+	const AudioSetupCheck check = check_audio_setup();
+	if (!check.windows_listen_supported) {
+		m_audioSetupHint->hide();
+		return;
+	}
+	if (!check.listening_devices.empty()) {
+		m_audioSetupHint->setText(tr("Windows Listen is enabled; audio may bypass mute. "
+					     "<a href=\"check\">Check audio setup</a>"));
+		m_audioSetupHint->show();
+	} else if (!check.complete) {
+		m_audioSetupHint->setText(tr("Windows audio routes could not be checked. "
+					     "<a href=\"check\">Check audio setup</a>"));
+		m_audioSetupHint->show();
+	} else {
+		m_audioSetupHint->hide();
+	}
+}
+
+void PresetDock::showAudioSetupCheck()
+{
+	QDialog dialog(this);
+	dialog.setWindowTitle(tr("Audio setup check"));
+	dialog.setMinimumWidth(560);
+	dialog.resize(560, 520);
+	auto *layout = new QVBoxLayout(&dialog);
+	auto *intro =
+		new QLabel(tr("Mute to me controls OBS monitoring. Windows Listen, direct "
+			      "application playback, and mixer forwarding can still send sound to your headphones."));
+	intro->setWordWrap(true);
+	layout->addWidget(intro);
+	auto *monitor = new QLabel();
+	monitor->setWordWrap(true);
+	monitor->setTextFormat(Qt::PlainText);
+	layout->addWidget(monitor);
+	auto *result = new QLabel();
+	result->setWordWrap(true);
+	result->setTextFormat(Qt::PlainText);
+	layout->addWidget(result);
+	auto *devices = new QListWidget();
+	devices->setMaximumHeight(120);
+	layout->addWidget(devices);
+	auto *disableListen = new QPushButton(tr("Turn off Listen for selected device"));
+	disableListen->setToolTip(tr("Stops Windows forwarding this recording device directly to speakers. "
+				     "This is a permanent setup change; re-enable it in Windows Sound if needed."));
+	layout->addWidget(disableListen);
+	auto *actionStatus = new QLabel();
+	actionStatus->setWordWrap(true);
+	actionStatus->setTextFormat(Qt::PlainText);
+	layout->addWidget(actionStatus);
+	auto *checklist = new QTextBrowser();
+	checklist->setFrameShape(QFrame::NoFrame);
+	checklist->setHtml(
+		tr("<b>Setup checklist</b><ol>"
+		   "<li>Route the application to <b>CABLE Input</b> or another output you are not listening to.</li>"
+		   "<li>Leave <b>Listen to this device</b> off for <b>CABLE Output</b>. "
+		   "Disable any additional mixer forwarding to your headphones.</li>"
+		   "<li>Capture the audio once: use application/window/game audio capture, or capture "
+		   "<b>CABLE Output</b>. Disable duplicate Desktop Audio capture.</li>"
+		   "<li>Choose your headphones as the OBS monitoring device. Set the source to "
+		   "<b>Monitor and Output</b> and assign it to a track enabled for recording.</li>"
+		   "<li>Make a short recording: Hear plays once, Mute is silent, and the saved "
+		   "recording has audio throughout.</li></ol>"
+		   "Application routing, third-party mixers, and recorded audio require manual verification."));
+	layout->addWidget(checklist, 1);
+	auto *buttons = new QDialogButtonBox(QDialogButtonBox::Close);
+	auto *recheck = buttons->addButton(tr("Check again"), QDialogButtonBox::ActionRole);
+#ifdef _WIN32
+	auto *soundSettings = buttons->addButton(tr("Windows Sound..."), QDialogButtonBox::ActionRole);
+	connect(soundSettings, &QPushButton::clicked, &dialog,
+		[]() { QProcess::startDetached("control.exe", {"mmsys.cpl,,1"}); });
+#endif
+	layout->addWidget(buttons);
+	connect(buttons, &QDialogButtonBox::rejected, &dialog, &QDialog::reject);
+	auto refresh = [&]() {
+		const char *name = nullptr;
+		const char *id = nullptr;
+		obs_get_audio_monitoring_device(&name, &id);
+		monitor->setText(tr("OBS monitoring device: %1").arg(QString::fromUtf8(name ? name : "Unknown")));
+		const AudioSetupCheck check = check_audio_setup();
+		devices->clear();
+		devices->setVisible(check.windows_listen_supported && !check.listening_devices.empty());
+		disableListen->setVisible(check.windows_listen_supported && !check.listening_devices.empty());
+		if (!check.windows_listen_supported) {
+			result->setText(tr(
+				"Automatic Windows Listen checks are available on Windows. Follow the checklist below."));
+		} else {
+			for (const auto &device : check.listening_devices) {
+				auto *item =
+					new QListWidgetItem(tr("%1 → %2 (Windows Listen on)")
+								    .arg(QString::fromStdString(device.name),
+									 QString::fromStdString(device.playback_name)),
+							    devices);
+				item->setData(Qt::UserRole, QString::fromStdString(device.id));
+			}
+			QString summary =
+				check.listening_devices.empty()
+					? tr("No enabled Windows Listen routes were found on the checked recording devices.")
+					: tr("Windows Listen forwards these devices outside OBS. Turn it off for the device carrying your captured audio.");
+			if (!check.complete)
+				summary += tr("\nSome devices could not be checked: %1")
+						   .arg(QString::fromStdString(check.error));
+			result->setText(summary);
+		}
+		disableListen->setEnabled(false);
+		refreshAudioSetupHint();
+	};
+	connect(devices, &QListWidget::currentItemChanged, &dialog,
+		[&](QListWidgetItem *item) { disableListen->setEnabled(item != nullptr); });
+	connect(recheck, &QPushButton::clicked, &dialog, [&]() {
+		actionStatus->clear();
+		refresh();
+	});
+	connect(disableListen, &QPushButton::clicked, &dialog, [&]() {
+		const auto *item = devices->currentItem();
+		if (!item)
+			return;
+		std::string error;
+		const bool ok = disable_windows_listen(item->data(Qt::UserRole).toString().toStdString(), error);
+		actionStatus->setText(
+			ok ? tr("Windows Listen is off. Test Mute, Hear, and a short recording.")
+			   : tr("Could not turn off Windows Listen: %1").arg(QString::fromStdString(error)));
+		refresh();
+	});
+	refresh();
+	dialog.exec();
 }
 
 void PresetDock::setCompactDockMode(bool compact, bool save)
@@ -954,12 +1113,15 @@ void PresetDock::showMuteContextMenu(const QPoint &pos)
 	QAction *compactAction =
 		menu.addAction(m_compactDockModeActive ? tr("Show full settings") : tr("Compact dock mode"));
 	QAction *guideAction = menu.addAction(tr("Open audio setup guide"));
+	QAction *checkAction = menu.addAction(tr("Check audio setup..."));
 
 	QAction *selectedAction = menu.exec(m_muteToMe->mapToGlobal(pos));
 	if (selectedAction == compactAction) {
 		setCompactDockMode(!m_compactDockModeActive, true);
 	} else if (selectedAction == guideAction) {
 		QDesktopServices::openUrl(QUrl(QString::fromUtf8(kAudioSetupGuideUrl)));
+	} else if (selectedAction == checkAction) {
+		showAudioSetupCheck();
 	}
 }
 

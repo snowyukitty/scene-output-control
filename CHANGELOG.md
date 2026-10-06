@@ -2,6 +2,12 @@
 
 ## Unreleased
 
+### Added
+
+- Added an audio setup check in the full dock and compact mute context menu, with a routing and recording checklist.
+- Added Windows Listen route detection, a warning while muted, and a selected-device action to disable Listen with persisted-state verification.
+- Added a Windows Sound shortcut and explained why Windows Listen can bypass mute even when an application already outputs to a virtual cable.
+
 ## 1.1.1 - 2026-08-16
 
 ### Added

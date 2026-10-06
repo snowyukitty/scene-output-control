@@ -50,6 +50,7 @@ target_sources(
         src/ScenePreset.cpp
         src/PresetValidation.cpp
         src/AudioSessionState.cpp
+        src/AudioSetup.cpp
         src/ApplyPreset.cpp
         src/PresetDock.cpp
 )
