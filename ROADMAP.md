@@ -63,6 +63,56 @@ on other platforms. This checkpoint does not change the release version or
 publish a release. Work is checkpointed on `feat/audio-setup-check`; the local
 working tree is clean at handoff and the repository mutation lease is released.
 
+## Public website and contributor onboarding (2026-10-06)
+
+This milestone makes the existing public site a clear entry point for new users:
+feature benefits, an interactive scene/mute illustration, platform-specific
+release downloads, and the complete guide with its existing deep links.
+The illustration never plays audio or connects to OBS. Windows Listen forwarding
+and the release/development distinction are explicit in the audio instructions.
+
+Contributor onboarding now includes a focused guide, structured bug/feature
+forms, and a recording-result checklist for audio reports. The site has local
+styles/scripts, an editable share-card source, mobile topic navigation, keyboard
+controls, reduced-motion support, and a usable no-JavaScript fallback.
+
+The website is isolated from unfinished plugin work: `main` continues to ship
+1.1.1; `feat/audio-setup-check` retains the unreleased Windows Listen checker.
+This milestone changes neither plugin binaries nor the release version.
+
+Local checks passed: HTML parsing, issue-form structure, JavaScript syntax,
+internal anchors, and browser behavior at 320/390/768/1440px in light/dark mode.
+Keyboard mute/scene controls, mute persistence across demo scene changes,
+reduced motion, and no-JavaScript navigation/downloads also passed. An axe-core
+4.11.0 automated WCAG 2.1 AA audit reported no violations in those eight browser
+configurations. Desktop/mobile previews and the 1200 × 630 share card were
+visually inspected. Download names were checked against the 1.1.1 release API.
+Automated accessibility checks do not replace human screen-reader testing.
+
+The completed documentation was pushed to `main` at `1b08371`. The existing
+`main:/docs` [GitHub Pages deployment](https://github.com/snowyukitty/scene-output-control/actions/runs/37426502620)
+succeeded. The same eight browser configurations and no-JavaScript checks passed
+against the public site, including the automated axe audit; the share image
+returned HTTP 200 as PNG. The public browser check can be repeated with the
+command documented in `docs/README.md`. Plugin
+[CI results](https://github.com/snowyukitty/scene-output-control/actions/runs/37426504713)
+remain separate from website validation and cover the release baseline, not the
+unreleased audio checker.
+Real saved-audio verification for the audio setup branch remains a separate
+follow-up; a website illustration cannot establish plugin capture safety.
+
+### Session handoff
+
+Scope: the static `docs/` site, contributor/issue guidance, README/roadmap, and
+`scripts/check_website.py`. No plugin source, release asset, audio setting, or
+installed DLL changed in this milestone. The public website branch is
+`feat/public-project-guide`; its completed tree is also on `main`. Website
+documentation has been merged into `feat/audio-setup-check`, preserving the
+earlier diagnostics implementation and its unresolved saved-audio check.
+The development guide matches the validated public guide; future checker
+instructions must retain the explicit release/development distinction.
+At final handoff, both worktrees are clean and the repository lease is released.
+
 ## Post-release Verification: `Mute to me` capture safety (P0, updated 2026-08-16)
 
 ### Reported behavior

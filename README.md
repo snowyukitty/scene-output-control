@@ -4,7 +4,9 @@ A third-party plugin for OBS Studio providing **per-scene output presets and per
 
 Scene Output Control lets each scene carry its own output/recording preferences and adds a global `Mute to me` control that silences OBS monitoring without removing audio from the recording mix. When you switch scenes, the plugin applies that scene's enabled overrides and stores the preset directly in the scene source's `private_settings`, so duplicated scenes keep their preset automatically.
 
-**[Open the setup and user guide](https://snowyukitty.github.io/scene-output-control/)** — including the one-time capture-safe audio setup and where to find per-scene resizing.
+**[Explore the plugin and try the interactive illustration](https://snowyukitty.github.io/scene-output-control/)** — feature introduction, downloads, and the full setup guide in one place.
+
+[Download the latest release](https://github.com/snowyukitty/scene-output-control/releases/latest) · [Set up personal mute](https://snowyukitty.github.io/scene-output-control/#quick-audio) · [Contribute](CONTRIBUTING.md)
 
 ## Features
 
@@ -153,6 +155,16 @@ Known limits:
 - Video changes cannot be applied while OBS outputs are active unless the plugin restarts recording.
 - `Mute to me` only affects audio heard through OBS monitoring.
 - Only the first active OBS instance can use Windows `Mute to me`. A later instance must be restarted after the owner exits before it can acquire the recovery guard.
+
+## Contributing
+
+Bug reports, platform testing, clearer instructions, and focused code changes
+are welcome. See [CONTRIBUTING.md](CONTRIBUTING.md) for development checks and
+how to report audio routing problems without exposing private data. The website
+is maintained in [docs/](docs/README.md).
+
+Scene Output Control is an independent third-party plugin, not affiliated with
+or endorsed by the OBS Project.
 
 ## License
 

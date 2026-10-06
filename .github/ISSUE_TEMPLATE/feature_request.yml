@@ -1,0 +1,23 @@
+name: Feature request
+description: Describe a workflow that Scene Output Control could improve.
+title: "[Idea]: "
+body:
+  - type: textarea
+    id: workflow
+    attributes:
+      label: What are you trying to do?
+      description: Describe the recording or monitoring workflow and the difficulty you encounter.
+    validations:
+      required: true
+  - type: textarea
+    id: improvement
+    attributes:
+      label: What would help?
+      description: Describe the desired behavior and an example of how you would use it.
+    validations:
+      required: true
+  - type: textarea
+    id: alternatives
+    attributes:
+      label: Current workaround or alternatives
+      description: Include your platform and whether this needs to work during recording/streaming. Keep private data out of examples.
