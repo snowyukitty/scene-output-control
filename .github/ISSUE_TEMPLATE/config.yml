@@ -1,0 +1,8 @@
+blank_issues_enabled: true
+contact_links:
+  - name: Setup and user guide
+    url: https://snowyukitty.github.io/scene-output-control/
+    about: Installation, scene presets, capture-safe personal mute, and troubleshooting.
+  - name: Contributor guide
+    url: https://github.com/snowyukitty/scene-output-control/blob/main/CONTRIBUTING.md
+    about: Building, testing, and preparing a focused contribution.

@@ -3,8 +3,19 @@
 <head>
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1" />
-<title>Scene Output Control - Setup and User Guide</title>
-<meta name="description" content="Set up capture-safe personal mute and per-scene resolution, FPS, recording, and monitoring presets with Scene Output Control, a third-party plugin for OBS Studio." />
+<title>Scene Output Control — Your scenes, your settings, your sound</title>
+<meta name="description" content="An open-source OBS Studio plugin for per-scene resolution, FPS and recording presets, plus personal monitoring mute. Explore the demo, download and get set up." />
+<link rel="canonical" href="https://snowyukitty.github.io/scene-output-control/" />
+<meta property="og:type" content="website" />
+<meta property="og:title" content="Scene Output Control — Your scenes, your settings, your sound" />
+<meta property="og:description" content="Scene-aware output presets. A quieter monitoring experience. One open-source OBS Studio dock." />
+<meta property="og:url" content="https://snowyukitty.github.io/scene-output-control/" />
+<meta property="og:image" content="https://snowyukitty.github.io/scene-output-control/social-card.png" />
+<meta property="og:image:width" content="1200" />
+<meta property="og:image:height" content="630" />
+<meta property="og:image:alt" content="Scene Output Control: per-scene output presets and personal monitoring mute for OBS Studio." />
+<meta name="twitter:card" content="summary_large_image" />
+<link rel="stylesheet" href="landing.css" />
 <style>
   :root {
     --bg: #0f1115;
@@ -33,6 +44,8 @@
       --accent: #2f6bdc;
       --accent-soft: #e8f0ff;
       --code-bg: #f2f4f7;
+      --green: #147a55;
+      --amber: #8b600a;
     }
   }
   * { box-sizing: border-box; }
@@ -273,7 +286,7 @@
     padding: 1px 7px;
     font-weight: 600;
     font-size: .9em;
-    white-space: nowrap;
+    overflow-wrap: anywhere;
   }
   figure {
     margin: 22px 0;
@@ -307,21 +320,62 @@
 </style>
 </head>
 <body>
+<a class="skip-link" href="#guide">Skip to user guide</a>
 <header class="topbar">
   <div class="topbar-inner">
-    <div class="logo">SO</div>
+    <div class="logo" aria-hidden="true">SO</div>
     <div>
       <h1>Scene Output Control</h1>
-      <span class="ver">Third-party OBS Studio plugin guide</span>
+      <span class="ver">Open-source plugin for OBS Studio</span>
     </div>
     <div class="spacer"></div>
+    <a class="ghlink" href="#install">Download</a>
+    <a class="ghlink guide-link" href="#guide">User guide</a>
     <a class="ghlink" href="https://github.com/snowyukitty/scene-output-control" target="_blank" rel="noopener">GitHub</a>
   </div>
 </header>
 
+<section class="landing" aria-labelledby="landing-title">
+  <div class="landing-copy">
+    <p class="eyebrow">A little more control. A little more quiet.</p>
+    <h2 id="landing-title">Your scenes.<br>Your settings.<br><span>Your sound.</span></h2>
+    <p class="landing-lead">Give each OBS scene its own output preset. Silence what you hear while keeping captured audio in the recording mix.</p>
+    <div class="landing-actions">
+      <a class="button primary" href="https://github.com/snowyukitty/scene-output-control/releases/latest">Download the plugin <span aria-hidden="true">↗</span></a>
+      <a class="button secondary" href="#guide">Read the setup guide <span aria-hidden="true">↓</span></a>
+    </div>
+    <p class="release-line">Release 1.1.1 · Windows x64, macOS universal, Ubuntu x86_64<br>Free and open source · GPL-2.0-or-later</p>
+  </div>
+  <div class="demo" aria-labelledby="demo-title">
+    <div class="demo-header"><span id="demo-title">One dock. Two everyday wins.</span><span class="demo-tag">Illustration</span></div>
+    <div class="demo-scenes" role="group" aria-label="Preview a scene preset">
+      <button type="button" data-scene="gameplay" aria-pressed="true" disabled>Gameplay<span>1080p · 60 FPS</span></button>
+      <button type="button" data-scene="vertical" aria-pressed="false" disabled>Vertical<span>1080 × 1920 · 30 FPS</span></button>
+    </div>
+    <div class="demo-output">
+      <div class="preview-frame" id="preview-frame" aria-hidden="true"><div class="preview-content"><span class="preview-label">SCENE OUTPUT</span><div class="preview-shape"></div><div class="preview-lines"><i></i><i></i><i></i></div></div></div>
+      <div class="preset-summary" aria-live="polite" aria-atomic="true"><span>Output preset</span><strong id="demo-resolution">1920 × 1080</strong><span id="demo-fps">60 FPS · applies while OBS outputs are idle</span></div>
+    </div>
+    <div class="demo-audio">
+      <div class="audio-branch"><span>Recording mix</span><span class="meter" aria-hidden="true"><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i></span><strong>Audio retained</strong></div>
+      <div class="audio-branch" id="monitor-branch"><span>Your monitoring</span><span class="meter" aria-hidden="true"><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i></span><strong id="demo-monitoring">Audible</strong></div>
+      <button type="button" class="button mute-preview" id="demo-mute" aria-pressed="false" disabled>Preview Mute to me</button>
+      <p id="demo-status" class="demo-status" role="status">Try mute: only the monitoring branch changes.</p>
+    </div>
+    <p class="demo-caption">Interactive illustration; no sound playback or OBS connection. Scene layouts are set in OBS. Mute applies globally to OBS-monitored sources.</p>
+    <noscript><p class="demo-caption">Enable JavaScript to try the illustration. Downloads and the full guide work without it.</p></noscript>
+  </div>
+</section>
+
+<section class="benefits" aria-label="Ways to use Scene Output Control">
+  <div><span class="eyebrow">01 / Set it once</span><h3>Let the scene carry the preset.</h3><p>Give gameplay and vertical recordings their own resolution and FPS. Choose the scene before starting an output.</p><a href="#video">Explore scene presets →</a></div>
+  <div><span class="eyebrow">02 / Keep it organized</span><h3>A place for every recording.</h3><p>Stage a different folder, format or audio-track selection for the next recording from each scene.</p><a href="#recording">Explore recording settings →</a></div>
+  <div><span class="eyebrow">03 / Take a quiet break</span><h3>Keep capturing. Stop listening.</h3><p>With capture-safe routing, one click silences personal OBS monitoring while captured audio stays in the mix.</p><a href="#quick-audio">Set up personal mute →</a></div>
+</section>
+
 <div class="layout">
   <nav class="toc" aria-label="Table of contents">
-    <h2>Start</h2>
+    <h2>User guide</h2>
     <a href="#intro">What it does</a>
     <a href="#install">Install</a>
     <a href="#quick-audio">Quick audio setup</a>
@@ -339,19 +393,15 @@
     <a href="#limits">Limits</a>
     <a href="#workflows">Workflows</a>
     <a href="#faq">FAQ</a>
+    <a href="#contribute">Get involved</a>
   </nav>
 
-  <main>
-    <div class="hero">
-      <span class="eyebrow">Two controls, one OBS dock</span>
-      <h2>Scene-aware output presets and personal audio control</h2>
-      <p class="lead">Automatically apply each scene's output settings, or stop hearing monitored audio while OBS keeps recording it.</p>
-      <div class="pills">
-        <span class="pill">Resolution and FPS</span>
-        <span class="pill">Recording presets</span>
-        <span class="pill">Monitoring device</span>
-        <span class="pill">Mute to me</span>
-      </div>
+  <main id="guide">
+    <div class="hero guide-intro">
+      <span class="eyebrow">From first install to your first preset</span>
+      <h2>The user guide</h2>
+      <p class="lead">Start with installation, then choose scene presets, personal monitoring control, or both.</p>
+      <details class="mobile-guide"><summary>Jump to a topic</summary><div class="mobile-guide-links"><a href="#install">Install</a><a href="#quick-audio">Audio setup</a><a href="#video">Scene presets</a><a href="#recording">Recording</a><a href="#faq">FAQ</a><a href="#contribute">Get involved</a></div></details>
     </div>
 
     <section id="intro">
@@ -378,7 +428,13 @@
 
     <section id="install">
       <h3>Install</h3>
-      <p>Download the current package for your platform from the <a href="https://github.com/snowyukitty/scene-output-control/releases/latest">latest GitHub Release</a>.</p>
+      <p>Download the package for your platform from the <a href="https://github.com/snowyukitty/scene-output-control/releases/latest">latest GitHub Release</a>. Current release: <strong>1.1.1</strong>.</p>
+      <div class="download-grid">
+        <a class="download-card" href="https://github.com/snowyukitty/scene-output-control/releases/download/1.1.1/obs-auto-resize-output-1.1.1-windows-x64.zip"><strong>Windows x64</strong><span>ZIP · manual installation</span></a>
+        <a class="download-card" href="https://github.com/snowyukitty/scene-output-control/releases/download/1.1.1/obs-auto-resize-output-1.1.1-macos-universal.pkg"><strong>macOS universal</strong><span>PKG · Intel + Apple silicon</span></a>
+        <a class="download-card" href="https://github.com/snowyukitty/scene-output-control/releases/download/1.1.1/obs-auto-resize-output-1.1.1-x86_64-linux-gnu.deb"><strong>Ubuntu x86_64</strong><span>DEB · native OBS package</span></a>
+      </div>
+      <p>Build dependencies are pinned to <strong>OBS Studio 31.1.1</strong>. Check your OBS version, OS and architecture before installing; availability of a package does not guarantee compatibility with every OBS distribution. See the <a href="https://obsproject.com/kb/plugins-guide">official OBS plugins guide</a>, especially for portable OBS and Flatpak installations.</p>
       <p>Close OBS before replacing the DLL. On Windows, install the plugin files here:</p>
       <table>
         <tr><th>File</th><th>Destination</th></tr>
@@ -390,6 +446,7 @@
         <li>Open <span class="uichip">Docks</span>.</li>
         <li>Enable <span class="uichip">Scene Output Control</span>.</li>
       </ol>
+      <details><summary>Installing on macOS or Ubuntu</summary><p>On macOS, close OBS and run the <code>.pkg</code> installer. On Ubuntu, install the downloaded <code>.deb</code> with your package manager so its dependencies are resolved. The DEB is for native OBS installations; it is not a Flatpak plugin package. Restart OBS and enable <strong>Docks → Scene Output Control</strong>.</p></details>
       <div class="callout note">
         <span class="ttl">The installed folder and DLL keep the original name</span>
         <p><code>obs-auto-resize-output</code> remains the technical package identifier so updates replace earlier versions and preserve existing scene presets and OBS dock layouts.</p>
@@ -400,6 +457,12 @@
       <span class="eyebrow">One-time setup</span>
       <h3>Mute for Me, Keep Recording</h3>
       <p>After this one-time routing setup, <span class="uichip">Mute to me</span> is a one-click control. The safe path is for OBS to capture the application, send it to the recording mix, and separately monitor it to your headphones.</p>
+
+      <div class="callout tip">
+        <span class="ttl">Already using a virtual cable, but mute still has sound?</span>
+        <p>Keep the application's output on <strong>CABLE Input</strong>, capture <strong>CABLE Output</strong> once in OBS, and turn off Windows <strong>Listen to this device</strong> on CABLE Output. Hear that source through OBS <strong>Monitor and Output</strong>. Windows Listen otherwise creates a separate route to your headphones that this plugin cannot mute.</p>
+        <p>In Windows Sound, open <strong>Recording → CABLE Output → Properties → Listen</strong> and uncheck <strong>Listen to this device</strong>. Also check any third-party mixer for direct forwarding.</p>
+      </div>
 
       <figure>
         <div class="route-map" role="img" aria-label="Capture-safe audio route from the application through OBS to recording and headphones">
@@ -430,6 +493,8 @@
           Enable audio capture on the application/window/game source. In <span class="uichip">Advanced Audio Properties</span>, choose <span class="uichip">Monitor and Output</span> and select a recorded track.
         </li>
       </ol>
+
+      <p>Using a virtual cable? Add an OBS <strong>Audio Input Capture</strong> source for its recording endpoint instead of capturing that same application a second time. The <a href="https://obsproject.com/kb/application-audio-capture-guide">OBS application audio guide</a> explains capture options; for this plugin's personal mute workflow, keep Windows Listen <strong>off</strong> and use OBS monitoring to hear the source.</p>
 
       <div class="callout tip">
         <span class="ttl">Which audio track should I select?</span>
@@ -597,6 +662,14 @@
     <section id="faq">
       <h3>FAQ</h3>
       <details>
+        <summary>Is this an official OBS plugin?</summary>
+        <p>No. Scene Output Control is an independent, community-developed plugin, licensed under GPL-2.0-or-later. It is not affiliated with or endorsed by the OBS Project.</p>
+      </details>
+      <details>
+        <summary>Where is Check audio setup...?</summary>
+        <p>The Windows Listen route checker and selected-device repair are <strong>unreleased development features</strong> on the <a href="https://github.com/snowyukitty/scene-output-control/tree/feat/audio-setup-check">audio setup development branch</a>. Release 1.1.1 includes personal mute and the setup guide, but not that checker. You can follow the manual steps above today.</p>
+      </details>
+      <details>
         <summary>I clicked Mute to me but still hear sound.</summary>
         <p>If the sound becomes quieter but does not disappear, you are probably hearing two paths: OBS monitoring plus direct Windows playback. Follow <a href="#quick-audio">Quick Audio Setup</a> so the application does not play directly to your headphones, disable duplicate Desktop Audio capture, and use <strong>Monitor and Output</strong> for the source.</p>
       </details>
@@ -617,11 +690,25 @@
         <p>Yes. Presets live in source private settings, which OBS copies during scene duplication and serializes with the scene collection.</p>
       </details>
     </section>
+
+    <section id="contribute">
+      <span class="eyebrow">Built in the open</span>
+      <h3>Help make the next recording better.</h3>
+      <p>You do not need to write C++ to contribute. Report a reproducible issue, test a setup on your platform, improve a confusing step, or share a workflow that would benefit from a scene preset.</p>
+      <div class="feature-grid">
+        <a class="feature-card" href="https://github.com/snowyukitty/scene-output-control/issues/new?template=bug_report.yml"><strong>Report a problem</strong><p>Tell us your OBS version, plugin version, audio route, and what happened.</p></a>
+        <a class="feature-card" href="https://github.com/snowyukitty/scene-output-control/blob/main/CONTRIBUTING.md"><strong>Contribute a fix or idea</strong><p>Start with the contributor guide and the checks relevant to your change.</p></a>
+      </div>
+      <p><a href="https://github.com/snowyukitty/scene-output-control">Browse the source</a> · <a href="https://github.com/snowyukitty/scene-output-control/blob/main/ROADMAP.md">Read the roadmap</a> · <a href="https://github.com/snowyukitty/scene-output-control/releases">Read release notes</a></p>
+      <p class="privacy-note">This page has no analytics, third-party fonts, or embedded media. The illustration runs locally in your browser. External links take you to GitHub or the OBS Project.</p>
+    </section>
   </main>
 </div>
 
 <footer>
   Scene Output Control - GPL-2.0-or-later - <a href="https://github.com/snowyukitty/scene-output-control" target="_blank" rel="noopener">github.com/snowyukitty/scene-output-control</a>
+  <p>Independent third-party plugin. Not affiliated with or endorsed by the OBS Project.</p>
 </footer>
+<script src="landing.js" defer></script>
 </body>
 </html>

@@ -4,6 +4,38 @@ This roadmap is based on the current event flow, OBS 31.1.1 source behavior, and
 recent OBS runtime logs. It separates release-blocking verification from larger
 maintenance work so reliability improvements can land incrementally.
 
+## Public website and contributor onboarding (2026-10-06)
+
+This milestone makes the existing public site a clear entry point for new users:
+feature benefits, an interactive scene/mute illustration, platform-specific
+release downloads, and the complete guide with its existing deep links.
+The illustration never plays audio or connects to OBS. Windows Listen forwarding
+and the release/development distinction are explicit in the audio instructions.
+
+Contributor onboarding now includes a focused guide, structured bug/feature
+forms, and a recording-result checklist for audio reports. The site has local
+styles/scripts, an editable share-card source, mobile topic navigation, keyboard
+controls, reduced-motion support, and a usable no-JavaScript fallback.
+
+The website is isolated from unfinished plugin work: `main` continues to ship
+1.1.1; `feat/audio-setup-check` retains the unreleased Windows Listen checker.
+This milestone changes neither plugin binaries nor the release version.
+
+Local checks passed: HTML parsing, issue-form structure, JavaScript syntax,
+internal anchors, and browser behavior at 320/390/768/1440px in light/dark mode.
+Keyboard mute/scene controls, mute persistence across demo scene changes,
+reduced motion, and no-JavaScript navigation/downloads also passed. An axe-core
+4.11.0 automated WCAG 2.1 AA audit reported no violations in those eight browser
+configurations. Desktop/mobile previews and the 1200 × 630 share card were
+visually inspected. Download names were checked against the 1.1.1 release API.
+Automated accessibility checks do not replace human screen-reader testing.
+
+The completed documentation is ready for the existing `main:/docs` GitHub Pages
+deployment. The public browser check can be repeated with the command documented
+in `docs/README.md`; plugin CI results remain separate from website validation.
+Real saved-audio verification for the audio setup branch remains a separate
+follow-up; a website illustration cannot establish plugin capture safety.
+
 ## Post-release Verification: `Mute to me` capture safety (P0, updated 2026-08-16)
 
 ### Reported behavior
