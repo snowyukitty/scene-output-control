@@ -96,8 +96,9 @@ against the public site, including the automated axe audit; the share image
 returned HTTP 200 as PNG. The public browser check can be repeated with the
 command documented in `docs/README.md`. Plugin
 [CI results](https://github.com/snowyukitty/scene-output-control/actions/runs/37426504713)
-remain separate from website validation and cover the release baseline, not the
-unreleased audio checker.
+passed: Windows, macOS, and Ubuntu builds, CTest, packaging, and the existing
+formatting jobs. These results remain separate from website validation and cover
+the release baseline, not the unreleased audio checker.
 Real saved-audio verification for the audio setup branch remains a separate
 follow-up; a website illustration cannot establish plugin capture safety.
 
