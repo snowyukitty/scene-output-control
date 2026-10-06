@@ -7,6 +7,8 @@
 - Added an audio setup check in the full dock and compact mute context menu, with a routing and recording checklist.
 - Added Windows Listen route detection, a warning while muted, and a selected-device action to disable Listen with persisted-state verification.
 - Added a Windows Sound shortcut and explained why Windows Listen can bypass mute even when an application already outputs to a virtual cable.
+- Added Windows-only, in-memory regression tests for Listen property decoding, verified writes, no-op behavior, refusal, rollback, and recovery failures.
+- Added a local Windows installer that preserves replaced files, verifies installation hashes, and refuses to replace a DLL while OBS is open.
 
 ## 1.1.1 - 2026-08-16
 

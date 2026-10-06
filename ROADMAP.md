@@ -4,6 +4,65 @@ This roadmap is based on the current event flow, OBS 31.1.1 source behavior, and
 recent OBS runtime logs. It separates release-blocking verification from larger
 maintenance work so reliability improvements can land incrementally.
 
+## Audio setup checkpoint (2026-10-06)
+
+### Confirmed routing issue
+
+The application already output to a virtual cable, but Windows **Listen to this
+device** was enabled on the cable's recording endpoint. That forwarded audio
+to the listening device independently of OBS. The installed plugin's mute
+successfully disabled OBS monitoring; it could not control Windows forwarding.
+Turning off Windows Listen resolved the local mute/hear behavior, which the
+user confirmed. The application output assignment did not need another change.
+
+### Implemented in the development branch
+
+- **Check audio setup...** is available in the full dock and compact mute
+  context menu. It lists enabled Windows Listen routes on active recording
+  devices and shows their playback destination.
+- A hint appears while muted when an enabled Listen route is detected or the
+  Windows route check could not complete. A clean check verifies only Windows
+  Listen, not every possible audio path.
+- **Turn off Listen for selected device** changes only the explicitly selected
+  endpoint, verifies the setting through a fresh property store, and attempts
+  to restore the previous setting on verification failure. Failed recovery is
+  reported instead of claiming success. Setup changes are permanent and can be
+  reversed in Windows Sound.
+- The panel includes the capture/monitoring/recording checklist, **Check again**,
+  and **Windows Sound...**. Application routing and third-party mixers remain
+  manual checks.
+- The local installer refuses to run while OBS is open, backs up the replaced
+  files, and verifies installation hashes. It does not stop or restart OBS.
+
+### Verification and next action
+
+The Windows build and CTest suite cover preset validation and in-memory Windows
+Listen tests: property types, missing settings, an already-disabled endpoint,
+persisted-state verification, refused writes, failed commits, rollback, and
+failed recovery. The tests never change a real audio device. Local smoke checks
+also covered active-device enumeration, a no-op repair on an already-disabled
+endpoint, dialog rendering/recheck, and the installer guard and backup/hash
+behavior in an isolated destination.
+
+Formatting passed for the changed source/test files and both changed CMake
+entry points. A broader Gersemi 0.12.0 scan reported 19 inherited helper files
+under `cmake/` that would be reformatted; the same 19 failures were reproduced
+from the `main` baseline (`6d05bc8`). Those helper files were left unchanged.
+The current formatting workflow checks changed files, so this broader baseline
+failure is tracked separately from the passing checks for this checkpoint.
+
+The new diagnostics DLL was **installed after OBS closed**, with the replaced
+DLL and locale file backed up and the installed files verified by SHA-256. A
+native loader smoke check using the installed OBS runtime resolved the plugin's
+dependencies and six module entry points. OBS was left closed; on the next
+launch, exercise the full/compact entry points and selected-device repair.
+The saved-recording waveform check across **Hear -> Mute -> Hear** remains
+pending. macOS and Linux builds have not been run for this checkpoint; Windows
+Listen detection/repair is Windows-only, while the checklist remains available
+on other platforms. This checkpoint does not change the release version or
+publish a release. Work is checkpointed on `feat/audio-setup-check`; the local
+working tree is clean at handoff and the repository mutation lease is released.
+
 ## Post-release Verification: `Mute to me` capture safety (P0, updated 2026-08-16)
 
 ### Reported behavior
@@ -173,7 +232,7 @@ and use a disposable profile/scene collection for the runtime matrix.
 
 ## P2: User Experience
 
-- Add an **Audio Setup Check** that inspects, without changing anything, the
+- Extend **Check audio setup** beyond the implemented Windows Listen check to inspect
   selected source's capture-audio state, monitoring mode, source track mask,
   recording track mask, explicit monitoring endpoint, and duplicate global
   Desktop Audio state. Present one review screen before applying any OBS-owned
@@ -183,7 +242,8 @@ and use a disposable profile/scene collection for the runtime matrix.
   OBS devices only after explicit confirmation. Windows per-application output
   routing remains a user choice because the plugin cannot safely infer the
   intended listening endpoint or install a virtual audio driver.
-- Put the full dock in a scroll area for short or narrow dock layouts.
+- Keep the full dock and setup checklist usable in short or narrow layouts;
+  both now have scrollable content.
 - Make format and bitrate controls mode-aware, including an explanation when an
   override cannot affect the selected OBS output mode.
 - Show per-field validation and the last effective value rather than only a

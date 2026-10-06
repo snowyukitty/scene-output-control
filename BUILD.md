@@ -48,6 +48,11 @@ cmake --build --preset windows-x64 --config RelWithDebInfo
 ctest --test-dir build_x64 -C RelWithDebInfo --output-on-failure
 ```
 
+On Windows, CTest runs both preset validation and in-memory Windows Listen
+transaction tests. The latter cover verified writes, no-op behavior, property
+types, refusal, and rollback without changing real audio settings. Other
+platforms run preset validation; Windows Listen controls are Windows-only.
+
 The first configure/build downloads the pinned OBS/Qt dependencies and may take a few minutes.
 
 The checked-in Windows preset targets Visual Studio 2022. With a newer Visual Studio generator, use a separate build directory and select that installed generator explicitly; do not reuse `build_x64` across generators.
@@ -89,6 +94,12 @@ pwsh -File scripts/Install-LocalBuild.ps1
 ```
 
 Replace `build_vs18` with your actual build directory. The helper refuses to run while OBS is open, backs up the replaced files, and verifies the installed DLL and locale file by SHA-256. It does not restart OBS or change audio settings. Use `-BuildDirectory` or `-InstallRoot` for a different staged build or plugin destination.
+
+For an extracted local preview package that places `Install-LocalBuild.ps1`
+beside the plugin directory, run that script directly. It detects the adjacent
+install layout. After installation, verify **Check audio setup...** from both
+the full dock and the compact mute button's context menu, then make a short
+**Hear -> Mute -> Hear** recording to check the saved audio as well as playback.
 
 Windows layout:
 

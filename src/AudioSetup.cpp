@@ -117,6 +117,50 @@ HRESULT read_enabled(IPropertyStore *properties, bool &enabled)
 	return S_OK;
 }
 
+// Keep device lookup separate from the transaction so failure and recovery
+// can be exercised with an in-memory property store, without changing audio.
+bool disable_listen_on_device(IMMDevice *device, std::string &error)
+{
+	error.clear();
+	ComPtr<IPropertyStore> properties;
+	HRESULT result = device->OpenPropertyStore(STGM_READWRITE, &properties.ptr);
+	bool original = false;
+	if (SUCCEEDED(result))
+		result = read_enabled(properties.ptr, original);
+	if (FAILED(result)) {
+		error = failure(result);
+		return false;
+	}
+	if (!original)
+		return true;
+
+	PropertyValue value;
+	value.value.vt = VT_BOOL;
+	value.value.boolVal = VARIANT_FALSE;
+	result = properties->SetValue(kListenEnabled, value.value);
+	if (SUCCEEDED(result))
+		result = properties->Commit();
+	// Open a fresh store to verify the persisted setting.
+	ComPtr<IPropertyStore> verification;
+	if (SUCCEEDED(result))
+		result = device->OpenPropertyStore(STGM_READ, &verification.ptr);
+	bool enabled = true;
+	if (SUCCEEDED(result))
+		result = read_enabled(verification.ptr, enabled);
+	if (SUCCEEDED(result) && !enabled)
+		return true;
+
+	error = FAILED(result) ? failure(result) : "Windows Listen is still enabled.";
+	value.value.boolVal = VARIANT_TRUE;
+	ComPtr<IPropertyStore> recovery;
+	HRESULT restore = device->OpenPropertyStore(STGM_READWRITE, &recovery.ptr);
+	if (SUCCEEDED(restore))
+		restore = recovery->SetValue(kListenEnabled, value.value);
+	if (FAILED(restore) || FAILED(recovery->Commit()))
+		error += " Could not restore the previous setting; check Windows Sound settings.";
+	return false;
+}
+
 } // namespace
 #endif
 
@@ -195,6 +239,7 @@ AudioSetupCheck check_audio_setup()
 
 bool disable_windows_listen(const std::string &device_id, std::string &error)
 {
+	error.clear();
 #ifdef _WIN32
 	const std::wstring id = wide(device_id);
 	if (id.empty()) {
@@ -204,50 +249,17 @@ bool disable_windows_listen(const std::string &device_id, std::string &error)
 	ComScope com;
 	ComPtr<IMMDeviceEnumerator> enumerator;
 	ComPtr<IMMDevice> device;
-	ComPtr<IPropertyStore> properties;
 	HRESULT result = com.available() ? CoCreateInstance(__uuidof(MMDeviceEnumerator), nullptr, CLSCTX_ALL,
 							    __uuidof(IMMDeviceEnumerator),
 							    reinterpret_cast<void **>(&enumerator.ptr))
 					 : com.result;
 	if (SUCCEEDED(result))
 		result = enumerator->GetDevice(id.c_str(), &device.ptr);
-	if (SUCCEEDED(result))
-		result = device->OpenPropertyStore(STGM_READWRITE, &properties.ptr);
-	bool original = false;
-	if (SUCCEEDED(result))
-		result = read_enabled(properties.ptr, original);
 	if (FAILED(result)) {
 		error = failure(result);
 		return false;
 	}
-	if (!original)
-		return true;
-
-	PropertyValue value;
-	value.value.vt = VT_BOOL;
-	value.value.boolVal = VARIANT_FALSE;
-	result = properties->SetValue(kListenEnabled, value.value);
-	if (SUCCEEDED(result))
-		result = properties->Commit();
-	// Open a fresh store to verify the persisted setting.
-	ComPtr<IPropertyStore> verification;
-	if (SUCCEEDED(result))
-		result = device->OpenPropertyStore(STGM_READ, &verification.ptr);
-	bool enabled = true;
-	if (SUCCEEDED(result))
-		result = read_enabled(verification.ptr, enabled);
-	if (SUCCEEDED(result) && !enabled)
-		return true;
-
-	error = FAILED(result) ? failure(result) : "Windows Listen is still enabled.";
-	value.value.boolVal = VARIANT_TRUE;
-	ComPtr<IPropertyStore> recovery;
-	HRESULT restore = device->OpenPropertyStore(STGM_READWRITE, &recovery.ptr);
-	if (SUCCEEDED(restore))
-		restore = recovery->SetValue(kListenEnabled, value.value);
-	if (FAILED(restore) || FAILED(recovery->Commit()))
-		error += " Could not restore the previous setting; check Windows Sound settings.";
-	return false;
+	return disable_listen_on_device(device.ptr, error);
 #else
 	(void)device_id;
 	error = "Windows Listen settings are available on Windows only.";

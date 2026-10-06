@@ -80,4 +80,22 @@ if(BUILD_TESTING)
     # executable a dependency rather than relying on the generator's ALL target.
     add_dependencies(${CMAKE_PROJECT_NAME} ${CMAKE_PROJECT_NAME}-preset-tests)
     add_test(NAME preset-validation COMMAND ${CMAKE_PROJECT_NAME}-preset-tests)
+    if(WIN32)
+        add_executable(
+            ${CMAKE_PROJECT_NAME}-windows-listen-tests
+            tests/WindowsListenTests.cpp
+        )
+        target_link_libraries(
+            ${CMAKE_PROJECT_NAME}-windows-listen-tests
+            PRIVATE ole32 uuid
+        )
+        add_dependencies(
+            ${CMAKE_PROJECT_NAME}
+            ${CMAKE_PROJECT_NAME}-windows-listen-tests
+        )
+        add_test(
+            NAME windows-listen
+            COMMAND ${CMAKE_PROJECT_NAME}-windows-listen-tests
+        )
+    endif()
 endif()

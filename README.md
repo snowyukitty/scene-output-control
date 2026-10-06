@@ -26,6 +26,10 @@ Global controls:
 - **Audio setup guide**: opens the capture-safe routing checklist from the full dock or the compact button's context menu.
 - **Check audio setup**: lists active recording devices with Windows **Listen to this device** enabled, shows their playback destination, and lets you turn off Listen for a selected device. A hint appears while muted if a Windows Listen route may bypass OBS. The check also includes a capture and recording checklist; application output routing and third-party mixers still need manual verification.
 
+The audio setup check and Listen repair controls are currently **unreleased
+development features**. The latest 1.1.1 release provides the mute control and
+setup guide; use a development build for the new check panel.
+
 ## Important OBS Limitation
 
 OBS cannot change base resolution, output resolution, or FPS while recording, streaming, replay buffer, or virtual camera output is active. That is a libobs video pipeline limitation, not a plugin limitation.
